@@ -16,11 +16,21 @@ from ai2thor_colab import (
     show_video
 )
 
+import prior
+
 # Class for controlling robot navigation. This is where we will have all the navigation commands.
 # This has NOT yet got the LLM connected, but merely a set of tools to move the robot and to interact
 # with the simulation environment.
 class RobotNavigationControl:
     is_DEBUG = False
+
+    def start_procthor(self):
+        dataset = prior.load_dataset("procthor-10k")
+        #dataset
+        house = dataset["train"][0]
+        type(house), house.keys(), house
+
+        controller = Controller(scene=house)
 
     # Starts server
     def start_ai2_thor(self):
@@ -73,7 +83,7 @@ class RobotNavigationControl:
         return (pos, rtn)
 
     # Exposing plot_frames function from AI2-THOR
-    def plot_frames(self, ev):
+    def show_current_robot_view(self, ev):
         plot_frames(ev.third_party_camera_frames[0])
 
     # Return current controller
@@ -197,6 +207,7 @@ class RobotNavigationControl:
     def execute_action_plan(self, plan):
         for act in plan:
             self.controller.step(action=act[0])
+            time.sleep(0.2)
 
     # Print pose of the object defined by the name in the input
     def print_pose_of_object(self, obj_name):

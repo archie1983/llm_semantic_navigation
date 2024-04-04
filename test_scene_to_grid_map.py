@@ -1,15 +1,54 @@
 # Copyright 2022 Kaiyu Zheng
-# 
+#
 # Usage of this file is licensed under the MIT License.
 
 import os
 import time
 from thortils import (launch_controller,
-                      convert_scene_to_grid_map)
+                      convert_scene_to_grid_map, proper_convert_scene_to_grid_map)
 from thortils.scene import SceneDataset
 from thortils.utils.visual import GridMapVisualizer
 from thortils.agent import thor_reachable_positions
 from thortils.grid_map import GridMap
+
+import prior
+
+def ae_test_proctor():
+    dataset = prior.load_dataset("procthor-10k")
+    #dataset
+    floor_plan = "FloorPlan22"
+    #scene_info = SceneDataset.load_single("./scenes", floor_plan)
+    #controller = launch_controller({"scene":dataset})
+    #grid_map = convert_scene_to_grid_map(controller, dataset, 0.25)
+
+    #controller = launch_controller({"scene":floor_plan})
+    #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
+
+
+    house = dataset["train"][3]
+    #controller = Controller(scene=house)
+    print(house)
+    controller = launch_controller({"scene":house})
+    #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
+    grid_map = proper_convert_scene_to_grid_map(controller)
+
+
+
+
+    print(floor_plan)
+    for y in range(grid_map.length):
+        row = []
+        for x in range(grid_map.width):
+            if (x,y) in grid_map.free_locations:
+                row.append(".")
+            else:
+                #assert (x,y) in grid_map.obstacles
+                if (x,y) in grid_map.obstacles:
+                    row.append("x")
+                else:
+                    row.append("u")
+        print("".join(row))
+
 
 def ae_test():
     floor_plan = "FloorPlan22"
@@ -73,9 +112,7 @@ def test_grid_map_save_load():
 
     os.remove("temp-grid-map.json")
 
-
-
-
 if __name__ == "__main__":
-    test_scene_to_grid_map()
-    test_grid_map_save_load()
+    ae_test_proctor()
+    #test_scene_to_grid_map()
+    #test_grid_map_save_load()
