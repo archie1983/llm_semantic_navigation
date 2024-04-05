@@ -26,9 +26,11 @@ class LLMRoomClassifier:
         "bathroom" : 4
     }
 
-    #print(self.labels_shuffled)
+    #print(self.labels_shuffled[119] + " @@@@ " + self.features_for_each_label[119])
 
     self.data_counter = 0
+    self.false_cnt = 0
+    self.true_cnt = 0
 
     self.glc = GemmaLLMControl()
 
@@ -39,20 +41,30 @@ class LLMRoomClassifier:
 
   def get_next_data_item(self):
 
-      if (self.data_counter < len(self.labels_shuffled) -1):
+      if (self.data_counter < len(self.labels_shuffled)):
           ret_tuple = (self.labels_shuffled[self.data_counter], self.features_for_each_label[self.data_counter])
           self.data_counter += 1
           return ret_tuple
       else:
           return ("", "")
 
+
+
   def process_data_items(self):
       for i in range(len(self.labels_shuffled)):
           (label, features) = rc.get_next_data_item()
-          #if (i == 55):
+          #if (i >= 118):
+          print(label + " :: " + features)
           self.glc.construct_classifier_question(features)
           ans = self.glc.get_answer()
-          print(str(i) + ") ANS: " + label + " " + str(ans) + " ## " + str(self.room_types.get(label)) + " # " + " @@ " + str(self.room_types.get(label) == ans))
+          print("\n" + str(i) + ") ANS: " + label + " " + str(ans) + " ## " + str(self.room_types.get(label)) + " # " + " @@ " + str(self.room_types.get(label) == ans))
+
+          if (self.room_types.get(label) == ans):
+              self.true_cnt += 1
+          else:
+              self.alse_cnt += 1
+
+      print("TRUE CNT: " + str(self.true_cnt) + " :: False CNT: " + str(self.false_cnt))
 
 
 rc = LLMRoomClassifier()

@@ -165,12 +165,13 @@ class GemmaLLMControl:
           print(cur_chunk, end='', flush=True)
 
         full_answer = full_answer.replace(".", "")
-        ndx = full_answer.index("**Answer:**")
+        if ("Answer:" in full_answer):        
+            ndx = full_answer.index("Answer:")
 
-        if (ndx >= 0 and len(full_answer) > ndx + 15):
-            #ret_answer = full_answer[ndx + 12]
-            nums = [int(s) for s in full_answer[ndx:(ndx + 20)].split() if s.isdigit()]
-            ret_answer = nums[0]
+            if (ndx >= 0 and len(full_answer) > ndx + 13):
+                #ret_answer = full_answer[ndx + 12]
+                nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
+                ret_answer = nums[0]
 
         #print("NDX: " + str(ndx) + " : " + str(len(full_answer)) + " : " + full_answer[ndx + 12] + " ## " + ret_answer)
         return ret_answer
