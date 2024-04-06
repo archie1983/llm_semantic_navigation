@@ -5,13 +5,26 @@
 import os
 import time
 from thortils import (launch_controller,
-                      convert_scene_to_grid_map, proper_convert_scene_to_grid_map)
+                      convert_scene_to_grid_map, proper_convert_scene_to_grid_map, proper_convert_scene_to_grid_map_and_poses)
 from thortils.scene import SceneDataset
 from thortils.utils.visual import GridMapVisualizer
 from thortils.agent import thor_reachable_positions
 from thortils.grid_map import GridMap
 
 import prior
+
+from gemma_room_classifier import LLMRoomClassifier
+
+def get_visible_objects_from_collection(objects, print_objects = False):
+    visible_objects = []
+
+    for obj in objects:
+        if obj['visible']:
+            if print_objects:
+                print(obj['objectType'] + " : " + str(obj['position']))
+            visible_objects.append(obj)
+
+    return visible_objects
 
 def ae_test_proctor():
     dataset = prior.load_dataset("procthor-10k")
@@ -24,18 +37,27 @@ def ae_test_proctor():
     #controller = launch_controller({"scene":floor_plan})
     #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
 
-
     house = dataset["train"][3]
     #controller = Controller(scene=house)
-    print(house)
+    #print(house)
     controller = launch_controller({"scene":house})
     #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
-    grid_map = proper_convert_scene_to_grid_map(controller)
+    (grid_map, observed_pos) = proper_convert_scene_to_grid_map_and_poses(controller)
 
+    lrc = LLMRoomClassifier()
 
+    for pos, objs in observed_pos.items():
+        print(pos)
+        objs_at_this_pos = set()
+        for obj in get_visible_objects_from_collection(objs):
+            objs_at_this_pos.add(obj['objectType'])
 
+        print(objs_at_this_pos)
+        lrc.classify_room_by_this_object_set(objs_at_this_pos)
 
-    print(floor_plan)
+    #print(len(observed_pos))
+
+    #print(floor_plan)
     for y in range(grid_map.length):
         row = []
         for x in range(grid_map.width):
@@ -48,7 +70,6 @@ def ae_test_proctor():
                 else:
                     row.append("u")
         print("".join(row))
-
 
 def ae_test():
     floor_plan = "FloorPlan22"

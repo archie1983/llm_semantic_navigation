@@ -1,5 +1,7 @@
 import ollama
 
+from room_type import RoomType
+
 class GemmaLLMControl:
     def initialise(self):
         self.prompt_system = """
@@ -148,7 +150,8 @@ class GemmaLLMControl:
 
     def get_answer(self):
         stream = ollama.chat(
-            model='gemma:7b-instruct-q6_K',
+            model = 'gemma:7b-instruct-v1.1-q6_K',
+            #model='gemma:7b-instruct-q6_K',
             messages=[
                 {"role": "user", "content": self.question}
             ],
@@ -165,13 +168,15 @@ class GemmaLLMControl:
           print(cur_chunk, end='', flush=True)
 
         full_answer = full_answer.replace(".", "")
-        if ("Answer:" in full_answer):        
+        if ("Answer:" in full_answer):
             ndx = full_answer.index("Answer:")
 
             if (ndx >= 0 and len(full_answer) > ndx + 13):
                 #ret_answer = full_answer[ndx + 12]
                 nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
                 ret_answer = nums[0]
+
+        ret_answer = RoomType.parse_llm_response(full_answer)
 
         #print("NDX: " + str(ndx) + " : " + str(len(full_answer)) + " : " + full_answer[ndx + 12] + " ## " + ret_answer)
         return ret_answer

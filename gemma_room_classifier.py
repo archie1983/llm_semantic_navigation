@@ -4,6 +4,7 @@ import os.path
 from time import time
 
 from ae_gemma_llm import GemmaLLMControl
+from room_type import RoomType
 
 class LLMRoomClassifier:
   def __init__(self):
@@ -19,13 +20,6 @@ class LLMRoomClassifier:
     self.labels_shuffled = pickle.load(file)
     file.close()
 
-    self.room_types = {
-        "living room" : 1,
-        "kitchen" : 2,
-        "bedroom" : 3,
-        "bathroom" : 4
-    }
-
     #print(self.labels_shuffled[119] + " @@@@ " + self.features_for_each_label[119])
 
     self.data_counter = 0
@@ -36,9 +30,6 @@ class LLMRoomClassifier:
 
     #########################################################
 
-  def predict(self, data_tuple):
-    print("Prediction of: " + data_tuple[0] + " : " + result[0])
-
   def get_next_data_item(self):
 
       if (self.data_counter < len(self.labels_shuffled)):
@@ -48,18 +39,29 @@ class LLMRoomClassifier:
       else:
           return ("", "")
 
+  def classify_room_by_this_object_set(self, obj_set):
+      # now we'll get the objects into a string separated by a space
+      objs_in_room_as_string = ""
+      for obj in obj_set:
+          objs_in_room_as_string += obj + " "
 
+      self.glc.construct_classifier_question(objs_in_room_as_string)
+      ans = self.glc.get_answer()
 
-  def process_data_items(self):
+      #print("\n" + str(ans) + " :: " + list(self.room_types.keys())[list(self.room_types.values()).index(ans)])
+      print("\n" + ans.name + " :: " + str(ans.value))
+
+  def test_classification_on_stored_data(self):
       for i in range(len(self.labels_shuffled)):
           (label, features) = rc.get_next_data_item()
           #if (i >= 118):
           print(label + " :: " + features)
           self.glc.construct_classifier_question(features)
           ans = self.glc.get_answer()
-          print("\n" + str(i) + ") ANS: " + label + " " + str(ans) + " ## " + str(self.room_types.get(label)) + " # " + " @@ " + str(self.room_types.get(label) == ans))
+          #print("\n" + str(i) + ") ANS: " + label + " " + str(ans) + " ## " + str(self.room_types.get(label)) + " # " + " @@ " + str(self.room_types.get(label) == ans))
+          print("\n" + str(i) + ") ANS: " + label + " " + ans.name + " ## " + str(ans.value) + " # " + " @@ " + str(RoomType.interpret_label(label) == ans))
 
-          if (self.room_types.get(label) == ans):
+          if (RoomType.interpret_label(label) == ans):
               self.true_cnt += 1
           else:
               self.alse_cnt += 1
@@ -67,8 +69,9 @@ class LLMRoomClassifier:
       print("TRUE CNT: " + str(self.true_cnt) + " :: False CNT: " + str(self.false_cnt))
 
 
-rc = LLMRoomClassifier()
-rc.process_data_items()
+if __name__ == "__main__":
+    rc = LLMRoomClassifier()
+    rc.test_classification_on_stored_data()
 
 #print(rc.get_next_data_item())
 #print(rc.get_next_data_item())
