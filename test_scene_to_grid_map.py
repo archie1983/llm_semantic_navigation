@@ -24,9 +24,26 @@ def get_visible_objects_from_collection(objects, print_objects = False):
 
     return visible_objects
 
-def ae_test_proctor():
+##
+# Load a PROCTHOR scene specified by the scene_id, build map and classify all
+# visited points belonging to one of the semantic room types. Also build a pkl
+# file with the classification result and the visible objects at that point.
+#
+# The scene_id takes form of <dataset>_<scene_number>, where dataset is one of:
+# train, val, test and scene_number is a number of scene in that set.
+# e.g.: "train_3" or "test_10"
+##
+def ae_process_proctor_scene(scene_id):
     dataset = prior.load_dataset("procthor-10k")
-    house = dataset["train"][3]
+    #dataset
+
+    scene_id_split = scene_id.split("_")
+    data_set = scene_id_split[0]
+    scene_num = int(scene_id_split[1])
+
+    print("Loading : " + data_set + "[" + str(scene_num) + "]")
+
+    house = dataset[data_set][scene_num]
     controller = launch_controller({"scene":house})
     #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
     (grid_map, observed_pos) = proper_convert_scene_to_grid_map_and_poses(controller)
@@ -51,7 +68,6 @@ def ae_test_proctor():
         if i > 3:
             break
 
-
     print("AE::::::::::::::::::::::;")
     print(RoomPoint.getAllVisibleObjectsInAllLivingRooms_smpl())
 
@@ -61,9 +77,7 @@ def ae_test_proctor():
     room_points_fname = "room_points.pkl"
     pickle.dump(room_points, open(room_points_fname, "wb"))
 
-
-
-    #print(len(observed_pos))
+    print(len(observed_pos))
 
     #print(floor_plan)
     for y in range(grid_map.length):
@@ -142,6 +156,6 @@ def test_grid_map_save_load():
     os.remove("temp-grid-map.json")
 
 if __name__ == "__main__":
-    ae_test_proctor()
+    ae_process_proctor_scene("val_15")
     #test_scene_to_grid_map()
     #test_grid_map_save_load()
