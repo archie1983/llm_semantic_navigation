@@ -10,7 +10,7 @@ from thortils.grid_map import GridMap
 import prior
 
 from gemma_room_classifier import LLMRoomClassifier
-from room_point import RoomPoint
+from scene_description import SceneDescription
 import pickle
 
 def get_visible_objects_from_collection(objects, print_objects = False):
@@ -49,7 +49,11 @@ def ae_process_proctor_scene(scene_id):
     (grid_map, observed_pos) = proper_convert_scene_to_grid_map_and_poses(controller)
 
     lrc = LLMRoomClassifier()
-    room_points = [] # points in this floorplan that were traversed using the proper_convert_scene_to_grid_map_and_poses method
+    # scene descriptions. Each of which will contain points of its floorplan
+    # that were traversed using the proper_convert_scene_to_grid_map_and_poses
+    # method
+    scene_descriptions = []
+    sd = SceneDescription()
 
     i = 0
     for pos, objs in observed_pos.items():
@@ -61,8 +65,7 @@ def ae_process_proctor_scene(scene_id):
         print(objs_at_this_pos)
         rt = lrc.classify_room_by_this_object_set(objs_at_this_pos)
 
-        rp = RoomPoint(pos, rt, objs)
-        room_points.append(rp)
+        sd.addPoint(pos, rt, objs)
 
         i+=1
         if i > 3:
@@ -92,6 +95,8 @@ def ae_process_proctor_scene(scene_id):
                 else:
                     row.append("u")
         print("".join(row))
+
+    return sd
 
 def ae_test():
     floor_plan = "FloorPlan22"
