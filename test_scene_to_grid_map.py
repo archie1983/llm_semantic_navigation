@@ -34,7 +34,7 @@ def get_visible_objects_from_collection(objects, print_objects = False):
 # e.g.: "train_3" or "test_10"
 ##
 def ae_process_proctor_scene(scene_id):
-    dataset = prior.load_dataset("procthor-10k")
+    dataset = prior.load_dataset("procthor-10k", "439193522244720b86d8c81cde2e51e3a4d150cf")
     #dataset
 
     scene_id_split = scene_id.split("_")
@@ -72,13 +72,13 @@ def ae_process_proctor_scene(scene_id):
             break
 
     print("AE::::::::::::::::::::::;")
-    print(RoomPoint.getAllVisibleObjectsInAllLivingRooms_smpl())
+    print(sd.getAllVisibleObjectsInAllLivingRooms_smpl())
 
-    print(RoomPoint.getAllVisibleObjectNamesInAllLivingRooms())
+    print(sd.getAllVisibleObjectNamesInAllLivingRooms())
 
     # store our room points collection into a pickle file
-    room_points_fname = "room_points.pkl"
-    pickle.dump(room_points, open(room_points_fname, "wb"))
+    scene_descr_fname = "scene_descr.pkl"
+    pickle.dump(sd, open(scene_descr_fname, "wb"))
 
     print(len(observed_pos))
 

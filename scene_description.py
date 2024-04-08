@@ -99,65 +99,65 @@ class SceneDescription:
       return strObject in point["visible_object_names"]
 
   # get all kitchen_points
-  def getAllkitchen_points(cls):
+  def getAllkitchen_points(self):
       return self.kitchen_points
 
   # get all living rooms
-  def getAllLivingRooms(cls):
+  def getAllLivingRooms(self):
       return self.living_room_points
 
   # get all bathroom_points
-  def getAllbathroom_points(cls):
+  def getAllbathroom_points(self):
       return self.bathroom_points
 
   # get all bedroom_points
-  def getAllbedroom_points(cls):
+  def getAllbedroom_points(self):
       return self.bedroom_points
 
   # get all visible objects in all kitchen_points
-  def getAllVisibleObjectsInAllkitchen_points(cls):
+  def getAllVisibleObjectsInAllkitchen_points(self):
       return self.visible_objects_in_kitchen
 
   # get all visible objects in all living rooms
-  def getAllVisibleObjectsInAllLivingRooms(cls):
+  def getAllVisibleObjectsInAllLivingRooms(self):
       return self.visible_objects_in_living_room
 
   # get all visible objects in all bathroom_points
-  def getAllVisibleObjectsInAllbathroom_points(cls):
+  def getAllVisibleObjectsInAllbathroom_points(self):
       return self.visible_objects_in_bathroom
 
   # get all visible objects in all bedroom_points
-  def getAllVisibleObjectsInAllbedroom_points(cls):
+  def getAllVisibleObjectsInAllbedroom_points(self):
       return self.visible_objects_in_bedroom
 
   # get all visible objects in all kitchen_points
-  def getAllVisibleObjectsInAllkitchen_points_smpl(cls):
+  def getAllVisibleObjectsInAllkitchen_points_smpl(self):
       return self.visible_objects_in_kitchen_smpl
 
   # get all visible objects in all living rooms
-  def getAllVisibleObjectsInAllLivingRooms_smpl(cls):
+  def getAllVisibleObjectsInAllLivingRooms_smpl(self):
       return self.visible_objects_in_living_room_smpl
 
   # get all visible objects in all bathroom_points
-  def getAllVisibleObjectsInAllbathroom_points_smpl(cls):
+  def getAllVisibleObjectsInAllbathroom_points_smpl(self):
       return self.visible_objects_in_bathroom_smpl
 
   # get all visible objects in all bedroom_points
-  def getAllVisibleObjectsInAllbedroom_points_smpl(cls):
+  def getAllVisibleObjectsInAllbedroom_points_smpl(self):
       return self.visible_objects_in_bedroom_smpl
 
   # get all visible object names in all kitchen_points
-  def getAllVisibleObjectNamesInAllkitchen_points(cls):
+  def getAllVisibleObjectNamesInAllkitchen_points(self):
       return self.visible_object_names_in_kitchen
 
   # get all visible object names in all living rooms
-  def getAllVisibleObjectNamesInAllLivingRooms(cls):
+  def getAllVisibleObjectNamesInAllLivingRooms(self):
       return self.visible_object_names_in_living_room
 
   # get all visible object names in all bathroom_points
-  def getAllVisibleObjectNamesInAllbathroom_points(cls):
+  def getAllVisibleObjectNamesInAllbathroom_points(self):
       return self.visible_object_names_in_bathroom
 
   # get all visible object names in all kitchen_points
-  def getAllVisibleObjectNamesInAllbedroom_points(cls):
+  def getAllVisibleObjectNamesInAllbedroom_points(self):
       return self.visible_object_names_in_bedroom
