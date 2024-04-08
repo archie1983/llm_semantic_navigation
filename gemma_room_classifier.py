@@ -43,7 +43,9 @@ class LLMRoomClassifier:
       # now we'll get the objects into a string separated by a space
       objs_in_room_as_string = ""
       for obj in obj_set:
-          objs_in_room_as_string += obj + " "
+          objs_in_room_as_string += obj + ", "
+
+      objs_in_room_as_string = objs_in_room_as_string[:-1]
 
       self.glc.construct_classifier_question(objs_in_room_as_string)
       ans = self.glc.get_answer()

@@ -143,7 +143,7 @@ class GemmaLLMControl:
 
         You should always provide justification
         """
-
+#You should always provide justification and confidence estimate of your guess
         self.question = template.format(query_words)
 
         return self.question
