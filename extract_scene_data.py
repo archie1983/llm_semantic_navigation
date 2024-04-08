@@ -32,7 +32,7 @@ class DataSceneExtractor:
     def getDataSet(self):
         if (self.dataset is None):
             self.dataset = prior.load_dataset("procthor-10k", "439193522244720b86d8c81cde2e51e3a4d150cf")
-            #dataset
+            #print(self.dataset)
         return self.dataset
 
     def test_data_scene_processing(self, scene_id):
@@ -43,16 +43,28 @@ class DataSceneExtractor:
         # scene descriptions. Each of which will contain points of its floorplan
         # that were traversed using the proper_convert_scene_to_grid_map_and_poses
         # method
-        scene_descriptions = []
+        # If pickle file for our scene descriptions exists, then load scene
+        # descriptions from there, otherwise create an empty collection
+        scene_descr_fname = "scene_descriptions.pkl"
+        if os.path.isfile(scene_descr_fname):
+            file = open(scene_descr_fname,'rb')
+            scene_descriptions = pickle.load(file)
+            file.close()
+        else:
+            scene_descriptions = []
 
-        for cnt in range(1, 3):
+        stored_number_of_scenes = len(scene_descriptions)
+        print("Scenes already stored: " + str(stored_number_of_scenes))
+
+        for cnt in range((1 + stored_number_of_scenes), (3 + stored_number_of_scenes)):
             scene_id = "train_" + str(cnt)
+            print("Processing " + scene_id)
             sd = self.ae_process_proctor_scene(scene_id, ds)
             scene_descriptions.append(sd)
 
-        # store our room points collection into a pickle file
-        scene_descr_fname = "scene_descriptions.pkl"
-        pickle.dump(scene_descriptions, open(scene_descr_fname, "wb"))
+            # store our room points collection into a pickle file. Do it on every
+            # scene so that we don't lose anything if stopped prematurely.
+            pickle.dump(scene_descriptions, open(scene_descr_fname, "wb"))
 
     ##
     # Load a PROCTHOR scene specified by the scene_id, build map and classify all
@@ -93,9 +105,9 @@ class DataSceneExtractor:
 
             sd.addPoint(pos, rt, objs)
 
-            i+=1
-            if i > 3:
-                break
+            #i+=1
+            #if i > 3:
+            #    break
 
         #print("AE::::::::::::::::::::::;")
         #print(sd.getAllVisibleObjectsInAllLivingRooms_smpl())
@@ -188,6 +200,7 @@ class DataSceneExtractor:
 
 if __name__ == "__main__":
     dse = DataSceneExtractor()
+    #dse.getDataSet()
     #dse.test_data_scene_processing("val_15")
     dse.process_10_data_scenes()
     #dse.test_scene_to_grid_map()
