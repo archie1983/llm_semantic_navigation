@@ -151,7 +151,7 @@ class SceneDescription:
       return self.visible_object_names_in_kitchen
 
   # get all visible object names in all living rooms
-  def getAllVisibleObjectNamesInAllLivingRooms(self):
+  def getAllVisibleObjectNamesInAllLivingRoom_points(self):
       return self.visible_object_names_in_living_room
 
   # get all visible object names in all bathroom_points
@@ -161,3 +161,16 @@ class SceneDescription:
   # get all visible object names in all kitchen_points
   def getAllVisibleObjectNamesInAllbedroom_points(self):
       return self.visible_object_names_in_bedroom
+
+  ##
+  # Gets the names of visible objects in the room specified by room type.
+  ##
+  def getAllVisibleObjectNamesInThisRoom(self, room_type):
+      if RoomType.KITCHEN == room_type:
+          return self.getAllVisibleObjectNamesInAllkitchen_points()
+      elif RoomType.LIVING_ROOM == room_type:
+          return self.getAllVisibleObjectNamesInAllLivingRoom_points()
+      elif RoomType.BATHROOM == room_type:
+          return self.getAllVisibleObjectNamesInAllbathroom_points()
+      elif RoomType.BEDROOM == room_type:
+          return self.getAllVisibleObjectNamesInAllbedroom_points()

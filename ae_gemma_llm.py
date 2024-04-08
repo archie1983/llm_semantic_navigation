@@ -148,6 +148,84 @@ class GemmaLLMControl:
 
         return self.question
 
+    ##
+    # Constructs a question of which room to look for the given object
+    ##
+    def construct_room_selector_question(self, object_to_find):
+        template = """
+        I am looking for:
+        {0}
+
+        Which room should I look in first?
+
+        1. Living room
+        2. Kitchen
+        3. Bedroom
+        4. Bathroom
+
+        You should always provide justification
+        """
+
+        self.question = template.format(object_to_find)
+
+        return self.question
+
+    ##
+    # Constructs a question of which room to look for the given object
+    ##
+    def construct_object_selector_question(self, what_to_look_for, where_to_look):
+        template = """
+        I am looking for:
+        {0}
+
+        Which object is it most likely to be near?
+
+        {1}
+
+        You should always provide justification
+        """
+
+        self.question = template.format(what_to_look_for, where_to_look)
+
+        return self.question
+
+    ##
+    # Ask LLM which object to look near for the given object. And return its
+    # choice.
+    ##
+    def get_object_selector_answer(self):
+        stream = ollama.chat(
+            model = 'gemma:7b-instruct-v1.1-q6_K',
+            #model='gemma:7b-instruct-q6_K',
+            messages=[
+                {"role": "user", "content": self.question}
+            ],
+            stream=True,
+        )
+
+        full_answer = ""
+        cur_chunk = ""
+        ret_answer = -1
+
+        for chunk in stream:
+          cur_chunk = chunk['message']['content']
+          full_answer += cur_chunk
+          print(cur_chunk, end='', flush=True)
+
+        full_answer = full_answer.replace(".", "")
+        if ("Answer:" in full_answer):
+            ndx = full_answer.index("Answer:")
+
+            if (ndx >= 0 and len(full_answer) > ndx + 13):
+                #ret_answer = full_answer[ndx + 12]
+                nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
+                ret_answer = nums[0]
+
+        #ret_answer = RoomType.parse_llm_response(full_answer)
+
+        #print("NDX: " + str(ndx) + " : " + str(len(full_answer)) + " : " + full_answer[ndx + 12] + " ## " + ret_answer)
+        #return ret_answer
+
     def get_answer(self):
         stream = ollama.chat(
             model = 'gemma:7b-instruct-v1.1-q6_K',

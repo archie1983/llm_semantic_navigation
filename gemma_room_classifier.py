@@ -59,6 +59,27 @@ class LLMRoomClassifier:
 
       return ans
 
+  ##
+  # Allows us asking the LLM where to find a given object
+  ##
+  def where_to_find_this(self, object_name):
+      self.glc.construct_room_selector_question(object_name)
+      ans = self.glc.get_answer()
+
+      return ans
+
+  def where_to_look_first(self, what_to_look_for, where_to_look):
+      objs_to_look_near = ""
+      for obj in where_to_look:
+          objs_to_look_near += obj + ", "
+
+      objs_to_look_near = objs_to_look_near[:-2]
+
+      self.glc.construct_object_selector_question(what_to_look_for, objs_to_look_near)
+      ans = self.glc.get_object_selector_answer()
+
+      return ans
+
   def test_classification_on_stored_data(self):
       for i in range(len(self.labels_shuffled)):
           (label, features) = rc.get_next_data_item()
