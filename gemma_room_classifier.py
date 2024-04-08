@@ -6,6 +6,10 @@ from time import time
 from ae_gemma_llm import GemmaLLMControl
 from room_type import RoomType
 
+##
+# A class that is sort of a middle man between the LLM that we will use for
+# classifying rooms and the data that is being provided.
+##
 class LLMRoomClassifier:
   def __init__(self):
     # read our labels from a pickle file
@@ -52,6 +56,8 @@ class LLMRoomClassifier:
 
       #print("\n" + str(ans) + " :: " + list(self.room_types.keys())[list(self.room_types.values()).index(ans)])
       print("\n" + ans.name + " :: " + str(ans.value))
+
+      return ans
 
   def test_classification_on_stored_data(self):
       for i in range(len(self.labels_shuffled)):

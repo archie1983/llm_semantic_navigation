@@ -1,7 +1,3 @@
-# Copyright 2022 Kaiyu Zheng
-#
-# Usage of this file is licensed under the MIT License.
-
 import os
 import time
 from thortils import (launch_controller,
@@ -14,6 +10,8 @@ from thortils.grid_map import GridMap
 import prior
 
 from gemma_room_classifier import LLMRoomClassifier
+from room_point import RoomPoint
+import pickle
 
 def get_visible_objects_from_collection(objects, print_objects = False):
     visible_objects = []
@@ -28,24 +26,15 @@ def get_visible_objects_from_collection(objects, print_objects = False):
 
 def ae_test_proctor():
     dataset = prior.load_dataset("procthor-10k")
-    #dataset
-    floor_plan = "FloorPlan22"
-    #scene_info = SceneDataset.load_single("./scenes", floor_plan)
-    #controller = launch_controller({"scene":dataset})
-    #grid_map = convert_scene_to_grid_map(controller, dataset, 0.25)
-
-    #controller = launch_controller({"scene":floor_plan})
-    #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
-
     house = dataset["train"][3]
-    #controller = Controller(scene=house)
-    #print(house)
     controller = launch_controller({"scene":house})
     #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
     (grid_map, observed_pos) = proper_convert_scene_to_grid_map_and_poses(controller)
 
     lrc = LLMRoomClassifier()
+    room_points = [] # points in this floorplan that were traversed using the proper_convert_scene_to_grid_map_and_poses method
 
+    i = 0
     for pos, objs in observed_pos.items():
         print(pos)
         objs_at_this_pos = set()
@@ -53,7 +42,26 @@ def ae_test_proctor():
             objs_at_this_pos.add(obj['objectType'])
 
         print(objs_at_this_pos)
-        lrc.classify_room_by_this_object_set(objs_at_this_pos)
+        rt = lrc.classify_room_by_this_object_set(objs_at_this_pos)
+
+        rp = RoomPoint(pos, rt, objs)
+        room_points.append(rp)
+
+        i+=1
+        if i > 3:
+            break
+
+
+    print("AE::::::::::::::::::::::;")
+    print(RoomPoint.getAllVisibleObjectsInAllLivingRooms_smpl())
+
+    print(RoomPoint.getAllVisibleObjectNamesInAllLivingRooms())
+
+    # store our room points collection into a pickle file
+    room_points_fname = "room_points.pkl"
+    pickle.dump(room_points, open(room_points_fname, "wb"))
+
+
 
     #print(len(observed_pos))
 
