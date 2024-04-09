@@ -49,13 +49,13 @@ class LLMRoomClassifier:
       for obj in obj_set:
           objs_in_room_as_string += obj + ", "
 
-      objs_in_room_as_string = objs_in_room_as_string[:-1]
+      objs_in_room_as_string = objs_in_room_as_string[:-2]
 
       self.glc.construct_classifier_question(objs_in_room_as_string)
       ans = self.glc.get_answer()
 
       #print("\n" + str(ans) + " :: " + list(self.room_types.keys())[list(self.room_types.values()).index(ans)])
-      print("\n" + ans.name + " :: " + str(ans.value))
+      #print("\n" + ans.name + " :: " + str(ans.value))
 
       return ans
 

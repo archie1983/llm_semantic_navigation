@@ -9,13 +9,20 @@ from thortils.grid_map import GridMap
 
 import prior
 
-from gemma_room_classifier import LLMRoomClassifier
+from gemma_room_classifier import LLMRoomClassifier # LLM room classifier
+from room_classifier import RoomClassifier # SVC room classifier
 from scene_description import SceneDescription
 import pickle
 
 class DataSceneExtractor:
     def __init__(self):
         self.dataset = None
+        # If our point only has these common objects visible, then there's little point
+        # to classify, because these are common.
+        self.common_objs = {'Wall', 'Doorway', 'Window', 'Floor', 'Doorframe'}
+
+        self.lrc = LLMRoomClassifier()
+        self.src = RoomClassifier()
 
     def get_visible_objects_from_collection(self, objects, print_objects = False):
         visible_objects = []
@@ -45,26 +52,36 @@ class DataSceneExtractor:
         # method
         # If pickle file for our scene descriptions exists, then load scene
         # descriptions from there, otherwise create an empty collection
-        scene_descr_fname = "scene_descriptions.pkl"
-        if os.path.isfile(scene_descr_fname):
-            file = open(scene_descr_fname,'rb')
-            scene_descriptions = pickle.load(file)
-            file.close()
+        #
+        # The number in SVC classified scenes must match the number in LLM classified
+        # scenes list.
+        scene_descr_llm_fname = "scene_descriptions_llm.pkl"
+        scene_descr_svc_fname = "scene_descriptions_svc.pkl"
+        if (os.path.isfile(scene_descr_llm_fname) and os.path.isfile(scene_descr_svc_fname)):
+            file_llm = open(scene_descr_llm_fname,'rb')
+            file_svc = open(scene_descr_svc_fname,'rb')
+            scene_descriptions_llm = pickle.load(file_llm)
+            scene_descriptions_svc = pickle.load(file_svc)
+            file_llm.close()
+            file_svc.close()
         else:
-            scene_descriptions = []
+            scene_descriptions_llm = []
+            scene_descriptions_svc = []
 
-        stored_number_of_scenes = len(scene_descriptions)
+        stored_number_of_scenes = len(scene_descriptions_llm)
         print("Scenes already stored: " + str(stored_number_of_scenes))
 
         for cnt in range((1 + stored_number_of_scenes), (3 + stored_number_of_scenes)):
             scene_id = "train_" + str(cnt)
             print("Processing " + scene_id)
-            sd = self.ae_process_proctor_scene(scene_id, ds)
-            scene_descriptions.append(sd)
+            (sd_llm, sd_svc) = self.ae_process_proctor_scene(scene_id, ds)
+            scene_descriptions_llm.append(sd_llm)
+            scene_descriptions_svc.append(sd_svc)
 
             # store our room points collection into a pickle file. Do it on every
             # scene so that we don't lose anything if stopped prematurely.
-            pickle.dump(scene_descriptions, open(scene_descr_fname, "wb"))
+            pickle.dump(scene_descriptions_llm, open(scene_descr_llm_fname, "wb"))
+            pickle.dump(scene_descriptions_svc, open(scene_descr_svc_fname, "wb"))
 
     ##
     # Load a PROCTHOR scene specified by the scene_id, build map and classify all
@@ -79,19 +96,25 @@ class DataSceneExtractor:
         scene_id_split = scene_id.split("_")
         data_set = scene_id_split[0]
         scene_num = int(scene_id_split[1])
+        diffs = []
 
         print("Loading : " + data_set + "[" + str(scene_num) + "]")
 
         house = dataset[data_set][scene_num]
         controller = launch_controller({"scene":house})
         #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
-        (grid_map, observed_pos) = proper_convert_scene_to_grid_map_and_poses(controller)
 
-        lrc = LLMRoomClassifier()
+        keywords = {'num_stops': 100, 'num_rotates': 8, 'sep': 1.25, 'downsample': True}
+        (grid_map, observed_pos) = proper_convert_scene_to_grid_map_and_poses(controller,
+                                     floor_cut=0.1,
+                                     ceiling_cut=1.0,
+                                     **keywords)
+
         # scene description, which will contain points of its floorplan
         # that were traversed using the proper_convert_scene_to_grid_map_and_poses
         # method.
-        sd = SceneDescription()
+        sd_llm = SceneDescription() # scene description classified with LLM
+        sd_svc = SceneDescription() # scene description classified with SVC
 
         i = 0
         for pos, objs in observed_pos.items():
@@ -100,10 +123,28 @@ class DataSceneExtractor:
             for obj in self.get_visible_objects_from_collection(objs):
                 objs_at_this_pos.add(obj['objectType'])
 
-            print(objs_at_this_pos)
-            rt = lrc.classify_room_by_this_object_set(objs_at_this_pos)
+            # No point to classify this point if there are no objects
+            if (len(objs_at_this_pos) < 1):
+                print("Empty set of objects -- skipping")
+                continue
 
-            sd.addPoint(pos, rt, objs)
+            print(objs_at_this_pos)
+
+            if (objs_at_this_pos.issubset(self.common_objs)):
+                print("Only common objects -- skipping")
+                continue
+
+            rt_llm = self.lrc.classify_room_by_this_object_set(objs_at_this_pos)
+            sd_llm.addPoint(pos, rt_llm, objs)
+
+            rt_svc = self.src.classify_room_by_this_object_set(objs_at_this_pos)
+            sd_svc.addPoint(pos, rt_svc, objs)
+
+            # If SVC and LLM don't agree to the classification of the room, then
+            # tell user and store this difference for reference.
+            if (rt_llm != rt_svc):
+                print("LLM AND SVC CLASSIFICATIONS DIFFER. LLM :: SVC : " + rt_llm.name + " :: " + rt_svc.name)
+                diffs.append({"svc" : rt_svc.name, "llm" : rt_llm.name, "objs" : objs_at_this_pos})
 
             #i+=1
             #if i > 3:
@@ -115,10 +156,16 @@ class DataSceneExtractor:
         #print(sd.getAllVisibleObjectNamesInAllLivingRooms())
 
         # store our room points collection into a pickle file
-        scene_descr_fname = "scene_descr.pkl"
-        pickle.dump(sd, open(scene_descr_fname, "wb"))
+        scene_descr_fname = "scene_descr_llm_" + scene_id + ".pkl"
+        pickle.dump(sd_llm, open(scene_descr_fname, "wb"))
 
-        print(len(observed_pos))
+        scene_descr_fname = "scene_descr_svc_" + scene_id + ".pkl"
+        pickle.dump(sd_svc, open(scene_descr_fname, "wb"))
+
+        diff_fname = "diff_svc_llm_" + scene_id + ".pkl"
+        pickle.dump(diffs, open(diff_fname, "wb"))
+
+        #print(len(observed_pos))
 
         #print(floor_plan)
         for y in range(grid_map.length):
@@ -134,7 +181,7 @@ class DataSceneExtractor:
                         row.append("u")
             print("".join(row))
 
-        return sd
+        return (sd_llm, sd_svc) # return both scene descriptions - classified with LLM and with SVC
 
     def ae_test(self):
         floor_plan = "FloorPlan22"

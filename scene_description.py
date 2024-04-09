@@ -37,6 +37,11 @@ class SceneDescription:
     self.points_of_scene = []
 
   def addPoint(self, point_pose, room_type, visible_objects_at_this_point):
+    # we don't want to store points where no objects are visible.
+    # Those are useless as we can't use them for semantic navigation.
+    if (len(visible_objects_at_this_point) < 1):
+        return
+
     new_point = {
         "point_pose" : point_pose,
         "room_type" : room_type,
@@ -91,6 +96,10 @@ class SceneDescription:
             self.visible_object_names_in_bathroom.add(obj['objectType'])
 
   #######################################################################################
+
+  # Do we have all 4 rooms- Kitchen, bedroom, living room and bathroom?
+  def isFullHouse(self):
+      return len(self.living_room_points) > 0 and len(self.kitchen_points) > 0 and len(self.bedroom_points) > 0 and len(self.bathroom_points) > 0
 
   def getAllVisibleObjectsAtThisPoint(self):
       return self.visible_objects_at_this_point
