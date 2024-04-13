@@ -9,8 +9,8 @@ from ModelType import ModelType
 
 accuracies = []
 for i in range(20):
-    gen = RoomClassifierTrainingDataGenerator(ModelType.FEATURES_12, 1100)
-    rc = RoomClassifier(True, ModelType.FEATURES_12)
+    gen = RoomClassifierTrainingDataGenerator(ModelType.AI2_THOR_SURR, 1100)
+    rc = RoomClassifier(True, ModelType.AI2_THOR_SURR)
     accuracies.append(rc.getAccuracy())
 
 print(accuracies)
