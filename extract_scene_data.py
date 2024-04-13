@@ -23,6 +23,7 @@ class DataSceneExtractor:
 
         self.lrc = LLMRoomClassifier()
         self.src = RoomClassifier()
+        self.NUMBER_OF_SCENES_IN_BATCH = 10
 
     def get_visible_objects_from_collection(self, objects, print_objects = False):
         visible_objects = []
@@ -45,7 +46,7 @@ class DataSceneExtractor:
     def test_data_scene_processing(self, scene_id):
         self.ae_process_proctor_scene(scene_id, self.getDataSet())
 
-    def process_10_data_scenes(self):
+    def process_1_batch_of_data_scenes(self):
         ds = self.getDataSet()
         # scene descriptions. Each of which will contain points of its floorplan
         # that were traversed using the proper_convert_scene_to_grid_map_and_poses
@@ -71,7 +72,7 @@ class DataSceneExtractor:
         stored_number_of_scenes = len(scene_descriptions_llm)
         print("Scenes already stored: " + str(stored_number_of_scenes))
 
-        for cnt in range((1 + stored_number_of_scenes), (3 + stored_number_of_scenes)):
+        for cnt in range((1 + stored_number_of_scenes), ((self.NUMBER_OF_SCENES_IN_BATCH + 1) + stored_number_of_scenes)):
             scene_id = "train_" + str(cnt)
             print("Processing " + scene_id)
             (sd_llm, sd_svc) = self.ae_process_proctor_scene(scene_id, ds)
@@ -249,6 +250,6 @@ if __name__ == "__main__":
     dse = DataSceneExtractor()
     #dse.getDataSet()
     #dse.test_data_scene_processing("val_15")
-    dse.process_10_data_scenes()
+    dse.process_1_batch_of_data_scenes()
     #dse.test_scene_to_grid_map()
     #dse.test_grid_map_save_load()
