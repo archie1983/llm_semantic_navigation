@@ -5,13 +5,74 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 from time import time
 from sklearn.svm import SVC
+#from room_classifier.ModelType import ModelType
+from ModelType import ModelType
 from room_type import RoomType
 
 class RoomClassifier:
-  def __init__(self):
-    # read our labels from a pickle file
-    self.labels_fname = "labels_shuffled.pkl"
-    self.features_fname = "features_for_each_label.pkl"
+  ###
+  # Initialises the SVC- either by training from the training data or by loading it from
+  # a pickle file- depending on the TRAIN_FROM_SCRATCH parameter.
+  ###
+  def __init__(self, TRAIN_FROM_SCRATCH = False, detector_type = ModelType.FEATURES_18):
+
+    self.load_training_data_and_vectorize(detector_type)
+
+    # We can either load pre-trained settings or train from scratch
+    if TRAIN_FROM_SCRATCH:
+        # We will use an Support Vector Classifier
+        self.clf = SVC(kernel="rbf", C=10000.0)
+
+        #features_train = features_train[:len(features_train)/100]
+        #labels_train = labels_train[:len(labels_train)/100]
+
+        # Now let's train our SVC
+        t0 = time()
+        self.clf.fit(self.features_train_vectorized, self.labels_train)
+        #print("training time:", round(time()-t0, 3), "s")
+
+        # Now let's save our trained parameters
+        pickle.dump(self.clf, open("pkl/trained_svc_" + detector_type.name + ".pkl", "wb"))
+
+    else: # so we want to load pre-trained parameters
+        file = open("pkl/trained_svc_" + detector_type.name + ".pkl",'rb')
+        self.clf = pickle.load(file)
+        file.close()
+
+
+    t0 = time()
+    self.pred = self.clf.predict(self.features_test_vectorized)
+    #print("prediction time:", round(time()-t0, 3), "s")
+
+    from sklearn.metrics import accuracy_score
+
+    # Finally learn and test how good model have we got
+    t0 = time()
+    self.acc = accuracy_score(self.pred, self.labels_test)
+    #print("accuracy calculation time:", round(time()-t0, 3), "s")
+
+    print("Accuracy = ",self.acc)
+
+    #print("Predicted Class for Elem 3:",self.pred[3]," Class for Elem 8:",self.pred[8]," Class for elem 5:", self.pred[5])
+
+    #print("Real Class for Elem 3:",self.labels_test[3]," Real Class for Elem 8:",self.labels_test[8]," Real Class for elem 5:", self.labels_test[5])
+    #print(self.clf.classes_)
+    #########################################################
+
+  def getAccuracy(self):
+    return self.acc;
+  ###
+  # Loads training data from pickle files and vecorizes the data for use in the SVC
+  ###
+  def load_training_data_and_vectorize(self, detector_type):
+    # read our labels from a pickle file. We may either be in room_classifier directory or a level above.
+    # So let's see if the files exist here or not.
+    if os.path.isfile("pkl/labels_shuffled_" + detector_type.name + ".pkl"):
+        self.labels_fname = "pkl/labels_shuffled_" + detector_type.name + ".pkl"
+        self.features_fname = "pkl/features_for_each_label_" + detector_type.name + ".pkl"
+    elif os.path.isfile("pkl/room_classifier/labels_shuffled_" + detector_type.name + ".pkl"):
+        self.labels_fname = "pkl/room_classifier/labels_shuffled_" + detector_type.name + ".pkl"
+        self.features_fname = "pkl/room_classifier/features_for_each_label_" + detector_type.name + ".pkl"
 
     file = open(self.features_fname,'rb')
     features_for_each_label = pickle.load(file)
@@ -22,7 +83,7 @@ class RoomClassifier:
     file.close()
 
     # Now create training and testing sets
-    features_train, features_test, labels_train, labels_test = cross_validation.train_test_split(features_for_each_label, labels_shuffled, test_size=0.1, random_state=1983)
+    features_train, features_test, self.labels_train, self.labels_test = cross_validation.train_test_split(features_for_each_label, labels_shuffled, test_size=0.1, random_state=1983)
 
     # Now we will turn the texts into numerical vectors so that we can use that for machine learning
     #vectorizer = TfidfVectorizer(max_df=1.0, stop_words='english')
@@ -32,44 +93,14 @@ class RoomClassifier:
     #features_train = features_for_each_label
     #labels_train = labels_shuffled
 
-    features_train_vectorized = self.vectorizer.fit_transform(features_train)
+    self.features_train_vectorized = self.vectorizer.fit_transform(features_train)
     self.features_test_vectorized  = self.vectorizer.transform(features_test)
 
     #print "tfidf.get_stop_words(): ",tfidf.get_stop_words()
     #print "vector: ",vector
-    #print(features_train_vectorized.shape)
+    #print(self.features_train_vectorized.shape)
     #print(self.features_test_vectorized.shape)
     #print(self.vectorizer.get_feature_names_out())
-
-
-    # Finally learn and test how good model have we got
-    self.clf = SVC(kernel="rbf", C=10000.0)
-
-    #features_train = features_train[:len(features_train)/100]
-    #labels_train = labels_train[:len(labels_train)/100]
-
-    t0 = time()
-    self.clf.fit(features_train_vectorized, labels_train)
-    print("training time:", round(time()-t0, 3), "s")
-
-    t0 = time()
-    self.pred = self.clf.predict(self.features_test_vectorized)
-    print("prediction time:", round(time()-t0, 3), "s")
-
-    from sklearn.metrics import accuracy_score
-
-    to = time()
-    acc = accuracy_score(self.pred, labels_test)
-    print("accuracy calculation time:", round(time()-t0, 3), "s")
-
-    print("Accuracy = ",acc)
-
-    #print("Predicted Class for Elem 10:",self.pred[10]," Class for Elem 8:",self.pred[8]," Class for elem 5:", self.pred[5])
-
-    #print("Real Class for Elem 10:",labels_test[10]," Real Class for Elem 8:",labels_test[8]," Real Class for elem 5:", labels_test[5])
-
-    #print(self.clf.classes_)
-    #########################################################
 
   def classify_room_by_this_object_set(self, obj_set):
       # now we'll get the objects into a string separated by a space
@@ -86,6 +117,9 @@ class RoomClassifier:
 
       return ans
 
+  ###
+  # Uses the cassifier to predict a room based on the input elements found in the room
+  ###
   def predict(self, items_as_string_separated_by_space):
     input_vectorized  = self.vectorizer.transform([items_as_string_separated_by_space])
     #print(input_vectorized)
@@ -95,8 +129,12 @@ class RoomClassifier:
 
     return RoomType.interpret_label(result[0])
 
-if __name__ == "__main__":
-    rc = RoomClassifier()
+def main():
+    #rc = RoomClassifier(True, ModelType.HYBRID_AT_18)
+    rc = RoomClassifier(True, ModelType.FEATURES_18)
+    #rc = RoomClassifier(True, ModelType.HYBRID_AT_12)
+    #rc = RoomClassifier(True, ModelType.AI2_THOR_18)
+    #rc = RoomClassifier(True, ModelType.AI2_THOR)
     rc.predict("SinkBasin CounterTop SoapBar ToiletPaperHanger")
     rc.predict("SinkBasin Chair Egg Toaster Microwave CounterTop DiningTable StoveKnob Lettuce SaltShaker")
     rc.predict("SinkBasin Chair Egg Toaster Microwave CounterTop DiningTable StoveKnob Lettuce")
@@ -106,3 +144,13 @@ if __name__ == "__main__":
     rc.predict("Candle Plunger ScrubBrush Toilet")
     rc.predict("TV Sofa")
     rc.predict("ScrubBrush ToiletCandle Plunger")
+
+    rc.predict("sink garbagebin door cabinet counter refrigerator window")
+    rc.predict("window table bed desk")
+    rc.predict("sofa door table window bookshelf curtain desk chair picture")
+    rc.predict("door picture window curtain")
+    rc.predict("garbagebin counter refrigerator cabinet")
+
+
+if __name__ == "__main__":
+    main()

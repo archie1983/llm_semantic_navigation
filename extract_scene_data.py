@@ -11,6 +11,7 @@ import prior
 
 from gemma_room_classifier import LLMRoomClassifier # LLM room classifier
 from room_classifier import RoomClassifier # SVC room classifier
+from ModelType import ModelType
 from scene_description import SceneDescription
 import pickle
 
@@ -22,7 +23,7 @@ class DataSceneExtractor:
         self.common_objs = {'Wall', 'Doorway', 'Window', 'Floor', 'Doorframe'}
 
         self.lrc = LLMRoomClassifier()
-        self.src = RoomClassifier()
+        self.src = RoomClassifier(True, ModelType.AI2_THOR)
         self.NUMBER_OF_SCENES_IN_BATCH = 10
 
     def get_visible_objects_from_collection(self, objects, print_objects = False):
@@ -56,8 +57,8 @@ class DataSceneExtractor:
         #
         # The number in SVC classified scenes must match the number in LLM classified
         # scenes list.
-        scene_descr_llm_fname = "scene_descriptions_llm.pkl"
-        scene_descr_svc_fname = "scene_descriptions_svc.pkl"
+        scene_descr_llm_fname = "pkl/scene_descriptions_llm.pkl"
+        scene_descr_svc_fname = "pkl/scene_descriptions_svc.pkl"
         if (os.path.isfile(scene_descr_llm_fname) and os.path.isfile(scene_descr_svc_fname)):
             file_llm = open(scene_descr_llm_fname,'rb')
             file_svc = open(scene_descr_svc_fname,'rb')
@@ -157,13 +158,13 @@ class DataSceneExtractor:
         #print(sd.getAllVisibleObjectNamesInAllLivingRooms())
 
         # store our room points collection into a pickle file
-        scene_descr_fname = "scene_descr_llm_" + scene_id + ".pkl"
+        scene_descr_fname = "pkl/scene_descr_llm_" + scene_id + ".pkl"
         pickle.dump(sd_llm, open(scene_descr_fname, "wb"))
 
-        scene_descr_fname = "scene_descr_svc_" + scene_id + ".pkl"
+        scene_descr_fname = "pkl/scene_descr_svc_" + scene_id + ".pkl"
         pickle.dump(sd_svc, open(scene_descr_fname, "wb"))
 
-        diff_fname = "diff_svc_llm_" + scene_id + ".pkl"
+        diff_fname = "pkl/diff_svc_llm_" + scene_id + ".pkl"
         pickle.dump(diffs, open(diff_fname, "wb"))
 
         #print(len(observed_pos))

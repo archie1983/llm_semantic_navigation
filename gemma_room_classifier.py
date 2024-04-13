@@ -12,30 +12,35 @@ from room_type import RoomType
 ##
 class LLMRoomClassifier:
   def __init__(self):
-    # read our labels from a pickle file
-    self.labels_fname = "labels_shuffled.pkl"
-    self.features_fname = "features_for_each_label.pkl"
-
-    file = open(self.features_fname,'rb')
-    self.features_for_each_label = pickle.load(file)
-    file.close()
-
-    file = open(self.labels_fname,'rb')
-    self.labels_shuffled = pickle.load(file)
-    file.close()
-
-    #print(self.labels_shuffled[119] + " @@@@ " + self.features_for_each_label[119])
-
     self.data_counter = 0
     self.false_cnt = 0
     self.true_cnt = 0
+
+    self.stored_labels_loaded = False
 
     self.glc = GemmaLLMControl()
 
     #########################################################
 
-  def get_next_data_item(self):
+  def load_stored_data(self):
+    if (not self.stored_labels_loaded):
+        self.stored_labels_loaded = True
+        # read our labels from a pickle file
+        self.labels_fname = "pkl/labels_shuffled.pkl"
+        self.features_fname = "pkl/features_for_each_label.pkl"
 
+        file = open(self.features_fname,'rb')
+        self.features_for_each_label = pickle.load(file)
+        file.close()
+
+        file = open(self.labels_fname,'rb')
+        self.labels_shuffled = pickle.load(file)
+        file.close()
+
+    #print(self.labels_shuffled[119] + " @@@@ " + self.features_for_each_label[119])
+
+  def get_next_data_item(self):
+      self.load_stored_data()
       if (self.data_counter < len(self.labels_shuffled)):
           ret_tuple = (self.labels_shuffled[self.data_counter], self.features_for_each_label[self.data_counter])
           self.data_counter += 1
@@ -81,6 +86,7 @@ class LLMRoomClassifier:
       return ans
 
   def test_classification_on_stored_data(self):
+      self.load_stored_data()
       for i in range(len(self.labels_shuffled)):
           (label, features) = rc.get_next_data_item()
           #if (i >= 118):

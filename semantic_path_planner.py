@@ -15,7 +15,7 @@ from scene_description import SceneDescription
 ##
 class SemanticPathPlanner:
     def __init__(self):
-        scene_descr_fname = "scene_descriptions.pkl"
+        scene_descr_fname = "pkl/scene_descriptions.pkl"
         if os.path.isfile(scene_descr_fname):
             file = open(scene_descr_fname,'rb')
             self.scene_descriptions = pickle.load(file)
