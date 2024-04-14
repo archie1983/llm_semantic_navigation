@@ -14,7 +14,7 @@ class RoomClassifier:
   # Initialises the SVC- either by training from the training data or by loading it from
   # a pickle file- depending on the TRAIN_FROM_SCRATCH parameter.
   ###
-  def __init__(self, TRAIN_FROM_SCRATCH = False, detector_type = ModelType.FEATURES_18):
+  def __init__(self, TRAIN_FROM_SCRATCH = False, detector_type = ModelType.HYBRID_AI2_THOR):
 
     self.load_training_data_and_vectorize(detector_type)
 

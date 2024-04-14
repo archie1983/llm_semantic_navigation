@@ -23,7 +23,8 @@ class DataSceneExtractor:
         self.common_objs = {'Wall', 'Doorway', 'Window', 'Floor', 'Doorframe'}
 
         self.lrc = LLMRoomClassifier()
-        self.src = RoomClassifier(True, ModelType.AI2_THOR)
+        #self.src = RoomClassifier(False, ModelType.AI2_THOR)
+        self.src = RoomClassifier(False, ModelType.HYBRID_AI2_THOR)
         self.NUMBER_OF_SCENES_IN_BATCH = 10
 
     def get_visible_objects_from_collection(self, objects, print_objects = False):
