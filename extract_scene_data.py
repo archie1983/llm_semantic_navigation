@@ -16,6 +16,9 @@ from ModelType import ModelType
 from scene_description import SceneDescription
 import pickle
 
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+
 class DataSceneExtractor:
     def __init__(self):
         self.dataset = None
@@ -27,6 +30,43 @@ class DataSceneExtractor:
         #self.src = RoomClassifier(False, ModelType.AI2_THOR)
         self.src = RoomClassifier(False, ModelType.HYBRID_AI2_THOR)
         self.NUMBER_OF_SCENES_IN_BATCH = 7
+
+        self.LLM_TYPE = "gemma"
+
+    ##
+    # Ground truth functions - data extracted from the actual room and point is
+    # tested to belong to the room polygon or not.
+    ##
+    def is_point_inside_room_ground_truth(self, point_to_test, room_polygon):
+        (x, y, z) = point_to_test
+        point = Point(x, z)
+        polygon = Polygon(room_polygon)
+        return polygon.contains(point)
+    ##
+    # Ground truth functions - data extracted from the actual room and point is
+    # tested to belong to the room polygon or not.
+    ##
+    def what_room_is_point_in_ground_truth(self, rooms, point):
+        for room in rooms:
+            if self.is_point_inside_room_ground_truth(point, room[1]):
+                return room[0]
+        return "NONE"
+    ##
+    # Ground truth functions - data extracted from the actual room and point is
+    # tested to belong to the room polygon or not.
+    ##
+    def get_rooms_ground_truth(self, house):
+        rooms = []
+        #print(house)
+        #print("\n")
+        #print(house["rooms"])
+        for room in house["rooms"]:
+            room_poly = [(corner["x"], corner["z"]) for corner in room["floorPolygon"]]
+            #print(room["roomType"] + " # " + str(room["floorPolygon"]))
+            #print(room["roomType"] + " ?? " + str(room_poly))
+            rooms.append((room["roomType"], room_poly))
+
+        return rooms
 
     def get_visible_objects_from_collection(self, objects, print_objects = False):
         visible_objects = []
@@ -59,8 +99,8 @@ class DataSceneExtractor:
         #
         # The number in SVC classified scenes must match the number in LLM classified
         # scenes list.
-        scene_descr_llm_fname = "pkl_mistral/scene_descriptions_llm.pkl"
-        scene_descr_svc_fname = "pkl_mistral/scene_descriptions_svc.pkl"
+        scene_descr_llm_fname = "pkl_" + self.LLM_TYPE + "/scene_descriptions_llm.pkl"
+        scene_descr_svc_fname = "pkl_" + self.LLM_TYPE + "/scene_descriptions_svc.pkl"
         if (os.path.isfile(scene_descr_llm_fname) and os.path.isfile(scene_descr_svc_fname)):
             file_llm = open(scene_descr_llm_fname,'rb')
             file_svc = open(scene_descr_svc_fname,'rb')
@@ -106,10 +146,13 @@ class DataSceneExtractor:
         print("Loading : " + data_set + "[" + str(scene_num) + "]")
 
         house = dataset[data_set][scene_num]
-        controller = launch_controller({"scene":house})
+        rooms = self.get_rooms_ground_truth(house)
+        print("ROOOMS:" + str(rooms))
+        controller = launch_controller({"scene": house, "VISIBILITY_DISTANCE": 3.0})
+
         #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
 
-        keywords = {'num_stops': 100, 'num_rotates': 8, 'sep': 1.25, 'downsample': True}
+        keywords = {'num_stops': 100, 'num_rotates': 8, 'sep': 1.25, 'downsample': True, 'v_angles': [30]}
         (grid_map, observed_pos) = proper_convert_scene_to_grid_map_and_poses(controller,
                                      floor_cut=0.1,
                                      ceiling_cut=1.0,
@@ -133,7 +176,7 @@ class DataSceneExtractor:
                 print("Empty set of objects -- skipping")
                 continue
 
-            print(objs_at_this_pos)
+            #print(objs_at_this_pos)
 
             if (objs_at_this_pos.issubset(self.common_objs)):
                 print("Only common objects -- skipping")
@@ -157,6 +200,9 @@ class DataSceneExtractor:
                 "SVC Time (s)": svc_elapsed_time
             })
 
+            print(objs_at_this_pos)
+            print(rt_svc.name + " ## " + rt_llm.name + " ## " + self.what_room_is_point_in_ground_truth(rooms, pos[0]))
+
             # If SVC and LLM don't agree to the classification of the room, then
             # tell user and store this difference for reference.
             if (rt_llm != rt_svc):
@@ -174,16 +220,16 @@ class DataSceneExtractor:
 
         # Data processing and saving as Excel
         df = pd.DataFrame(time_records)
-        df.to_excel(f"pkl_mistral/timing_data_{scene_id}.xlsx", index=False)
+        df.to_excel(f"pkl_" + self.LLM_TYPE + "/timing_data_{scene_id}.xlsx", index=False)
 
         # store our room points collection into a pickle file
-        scene_descr_fname = "pkl_mistral/scene_descr_llm_" + scene_id + ".pkl"
+        scene_descr_fname = "pkl_" + self.LLM_TYPE + "/scene_descr_llm_" + scene_id + ".pkl"
         pickle.dump(sd_llm, open(scene_descr_fname, "wb"))
 
-        scene_descr_fname = "pkl_mistral/scene_descr_svc_" + scene_id + ".pkl"
+        scene_descr_fname = "pkl_" + self.LLM_TYPE + "/scene_descr_svc_" + scene_id + ".pkl"
         pickle.dump(sd_svc, open(scene_descr_fname, "wb"))
 
-        diff_fname = "pkl_mistral/diff_svc_llm_" + scene_id + ".pkl"
+        diff_fname = "pkl_" + self.LLM_TYPE + "/diff_svc_llm_" + scene_id + ".pkl"
         pickle.dump(diffs, open(diff_fname, "wb"))
 
         #print(len(observed_pos))

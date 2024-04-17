@@ -131,12 +131,16 @@ class GemmaLLMControl:
 
     def construct_classifier_question(self, query_words):
         template = """
-        I observe the following objects while exploring a room: {0}
+        I observe the following objects while exploring a room:
+        {0}
+
         What kind of room is this?
+
         1. Living room
         2. Kitchen
         3. Bedroom
         4. Bathroom
+
         You should always provide justification
         """
 #You should always provide justification and confidence estimate of your guess
@@ -191,8 +195,7 @@ class GemmaLLMControl:
     ##
     def get_object_selector_answer(self):
         stream = ollama.chat(
-            model = 'mistral:latest',
-            #model = 'gemma:7b-instruct-v1.1-q6_K',
+            model = 'gemma:7b-instruct-v1.1-q6_K',
             #model='gemma:7b-instruct-q6_K',
             messages=[
                 {"role": "user", "content": self.question}
@@ -225,8 +228,7 @@ class GemmaLLMControl:
 
     def get_answer(self):
         stream = ollama.chat(
-            model = 'mistral:latest',
-            #model = 'gemma:7b-instruct-v1.1-q6_K',
+            model = 'gemma:7b-instruct-v1.1-q6_K',
             #model='gemma:7b-instruct-q6_K',
             messages=[
                 {"role": "user", "content": self.question}
@@ -244,7 +246,6 @@ class GemmaLLMControl:
           print(cur_chunk, end='', flush=True)
 
         full_answer = full_answer.replace(".", "")
-        '''
         if ("Answer:" in full_answer):
             ndx = full_answer.index("Answer:")
 
@@ -252,7 +253,6 @@ class GemmaLLMControl:
                 #ret_answer = full_answer[ndx + 12]
                 nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
                 ret_answer = nums[0]
-        '''
 
         ret_answer = RoomType.parse_llm_response(full_answer)
 
