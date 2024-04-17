@@ -1,5 +1,6 @@
 from room_type import RoomType
 from simplified_object import SimplifiedObject
+from enum import Enum
 
 class ClassifierType(Enum):
     LLM = 1 # LLM classified this
