@@ -1,0 +1,8 @@
+.ipynb_checkpoints/*
+__pycache__/*
+experiment_data/*
+objs.txt
+pictures/*
+pkl_17Apr2024/*
+remarks_for_paper.txt
+scenes/*
