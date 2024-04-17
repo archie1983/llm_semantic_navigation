@@ -131,16 +131,12 @@ class GemmaLLMControl:
 
     def construct_classifier_question(self, query_words):
         template = """
-        I observe the following objects while exploring a room:
-        {0}
-
+        I observe the following objects while exploring a room: {0}
         What kind of room is this?
-
         1. Living room
         2. Kitchen
         3. Bedroom
         4. Bathroom
-
         You should always provide justification
         """
 #You should always provide justification and confidence estimate of your guess
