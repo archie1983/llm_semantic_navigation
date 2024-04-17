@@ -123,7 +123,10 @@ class RoomClassifier:
   def predict(self, items_as_string_separated_by_space):
     input_vectorized  = self.vectorizer.transform([items_as_string_separated_by_space])
     #print(input_vectorized)
+    
+    #t0 = time()
     result = self.clf.predict(input_vectorized)
+    #print("svc predict time:", round(time()-t0, 5), "s")
 
     print("Prediction of: " + items_as_string_separated_by_space + " : " + result[0])
 

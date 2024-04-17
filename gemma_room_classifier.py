@@ -57,7 +57,10 @@ class LLMRoomClassifier:
       objs_in_room_as_string = objs_in_room_as_string[:-2]
 
       self.glc.construct_classifier_question(objs_in_room_as_string)
+      
+      #t0 = time()
       ans = self.glc.get_answer()
+      #print("llm predict time:", round(time()-t0, 3), "s")
 
       #print("\n" + str(ans) + " :: " + list(self.room_types.keys())[list(self.room_types.values()).index(ans)])
       #print("\n" + ans.name + " :: " + str(ans.value))

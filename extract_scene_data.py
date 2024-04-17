@@ -1,5 +1,6 @@
 import os
-import time
+from time import time
+import pandas as pd
 from thortils import (launch_controller,
                       convert_scene_to_grid_map, proper_convert_scene_to_grid_map, proper_convert_scene_to_grid_map_and_poses)
 from thortils.scene import SceneDataset
@@ -25,7 +26,7 @@ class DataSceneExtractor:
         self.lrc = LLMRoomClassifier()
         #self.src = RoomClassifier(False, ModelType.AI2_THOR)
         self.src = RoomClassifier(False, ModelType.HYBRID_AI2_THOR)
-        self.NUMBER_OF_SCENES_IN_BATCH = 10
+        self.NUMBER_OF_SCENES_IN_BATCH = 7
 
     def get_visible_objects_from_collection(self, objects, print_objects = False):
         visible_objects = []
@@ -58,8 +59,8 @@ class DataSceneExtractor:
         #
         # The number in SVC classified scenes must match the number in LLM classified
         # scenes list.
-        scene_descr_llm_fname = "pkl/scene_descriptions_llm.pkl"
-        scene_descr_svc_fname = "pkl/scene_descriptions_svc.pkl"
+        scene_descr_llm_fname = "pkl_mistral/scene_descriptions_llm.pkl"
+        scene_descr_svc_fname = "pkl_mistral/scene_descriptions_svc.pkl"
         if (os.path.isfile(scene_descr_llm_fname) and os.path.isfile(scene_descr_svc_fname)):
             file_llm = open(scene_descr_llm_fname,'rb')
             file_svc = open(scene_descr_svc_fname,'rb')
@@ -100,6 +101,7 @@ class DataSceneExtractor:
         data_set = scene_id_split[0]
         scene_num = int(scene_id_split[1])
         diffs = []
+        time_records = []  # List to store time records for each position
 
         print("Loading : " + data_set + "[" + str(scene_num) + "]")
 
@@ -137,11 +139,23 @@ class DataSceneExtractor:
                 print("Only common objects -- skipping")
                 continue
 
+            t0 = time()
             rt_llm = self.lrc.classify_room_by_this_object_set(objs_at_this_pos)
-            sd_llm.addPoint(pos, rt_llm, objs)
+            llm_elapsed_time = round(time() - t0, 5)
+            print("llm predict time:", llm_elapsed_time, "s")
+            sd_llm.addPoint(pos, rt_llm, objs, llm_elapsed_time)
 
+            t0 = time()
             rt_svc = self.src.classify_room_by_this_object_set(objs_at_this_pos)
-            sd_svc.addPoint(pos, rt_svc, objs)
+            svc_elapsed_time = round(time() - t0, 5)
+            print("svc predict time:", svc_elapsed_time, "s")
+            sd_svc.addPoint(pos, rt_svc, objs, svc_elapsed_time)
+
+            time_records.append({
+                "Position": pos,
+                "LLM Time (s)": llm_elapsed_time,
+                "SVC Time (s)": svc_elapsed_time
+            })
 
             # If SVC and LLM don't agree to the classification of the room, then
             # tell user and store this difference for reference.
@@ -158,14 +172,18 @@ class DataSceneExtractor:
 
         #print(sd.getAllVisibleObjectNamesInAllLivingRooms())
 
+        # Data processing and saving as Excel
+        df = pd.DataFrame(time_records)
+        df.to_excel(f"pkl_mistral/timing_data_{scene_id}.xlsx", index=False)
+
         # store our room points collection into a pickle file
-        scene_descr_fname = "pkl/scene_descr_llm_" + scene_id + ".pkl"
+        scene_descr_fname = "pkl_mistral/scene_descr_llm_" + scene_id + ".pkl"
         pickle.dump(sd_llm, open(scene_descr_fname, "wb"))
 
-        scene_descr_fname = "pkl/scene_descr_svc_" + scene_id + ".pkl"
+        scene_descr_fname = "pkl_mistral/scene_descr_svc_" + scene_id + ".pkl"
         pickle.dump(sd_svc, open(scene_descr_fname, "wb"))
 
-        diff_fname = "pkl/diff_svc_llm_" + scene_id + ".pkl"
+        diff_fname = "pkl_mistral/diff_svc_llm_" + scene_id + ".pkl"
         pickle.dump(diffs, open(diff_fname, "wb"))
 
         #print(len(observed_pos))
