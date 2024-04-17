@@ -51,8 +51,8 @@ class DataSceneExtractor:
     def what_room_is_point_in_ground_truth(self, rooms, point):
         for room in rooms:
             if self.is_point_inside_room_ground_truth(point, room[1]):
-                return room[0]
-        return "NONE"
+                return RoomType.interpret_label(room[0])
+        return RoomType.interpret_label("NONE")
     ##
     # Ground truth functions - data extracted from the actual room and point is
     # tested to belong to the room polygon or not.
@@ -149,9 +149,9 @@ class DataSceneExtractor:
         while processed_scenes_in_this_batch < self.NUMBER_OF_SCENES_IN_BATCH:
             scene_id = "train_" + str(highest_scene_index + 1)
             print("Processing " + scene_id)
-            (sd_llm, sd_svc) = self.ae_process_proctor_scene(scene_id, ds)
+            sd = self.ae_process_proctor_scene(scene_id, ds)
             highest_scene_index += 1
-            if not sd_llm:
+            if not sd:
                 continue
             #scene_descriptions_llm.append(sd_llm)
             #scene_descriptions_svc.append(sd_svc)
@@ -175,7 +175,6 @@ class DataSceneExtractor:
         scene_id_split = scene_id.split("_")
         data_set = scene_id_split[0]
         scene_num = int(scene_id_split[1])
-        diffs = []
         time_records = []  # List to store time records for each position
 
         print("Loading : " + data_set + "[" + str(scene_num) + "]")
@@ -189,7 +188,7 @@ class DataSceneExtractor:
         # then skip.
         if not self.is_full_house(rooms):
             print("skipping house because it's not full ----------------------- ")
-            return (False, False)
+            return False
 
         controller = launch_controller({"scene": house, "VISIBILITY_DISTANCE": 3.0})
 
@@ -204,8 +203,7 @@ class DataSceneExtractor:
         # scene description, which will contain points of its floorplan
         # that were traversed using the proper_convert_scene_to_grid_map_and_poses
         # method.
-        sd_llm = SceneDescription() # scene description classified with LLM
-        sd_svc = SceneDescription() # scene description classified with SVC
+        sd = SceneDescription() # scene description classified with LLM and SVC
 
         i = 0
         for pos, objs in observed_pos.items():
@@ -228,14 +226,16 @@ class DataSceneExtractor:
             t0 = time()
             rt_llm = self.lrc.classify_room_by_this_object_set(objs_at_this_pos)
             llm_elapsed_time = round(time() - t0, 5)
-            print("llm predict time:", llm_elapsed_time, "s")
-            sd_llm.addPoint(pos, rt_llm, objs, llm_elapsed_time)
+            #print("llm predict time:", llm_elapsed_time, "s")
 
             t0 = time()
             rt_svc = self.src.classify_room_by_this_object_set(objs_at_this_pos)
             svc_elapsed_time = round(time() - t0, 5)
-            print("svc predict time:", svc_elapsed_time, "s")
-            sd_svc.addPoint(pos, rt_svc, objs, svc_elapsed_time)
+            #print("svc predict time:", svc_elapsed_time, "s")
+
+            rt_gt = self.what_room_is_point_in_ground_truth(rooms, pos[0])
+
+            sd.addPoint(pos, rt_llm, rt_svc, rt_gt, objs, llm_elapsed_time, svc_elapsed_time)
 
             time_records.append({
                 "Position": pos,
@@ -244,36 +244,21 @@ class DataSceneExtractor:
             })
 
             print(objs_at_this_pos)
-            print(rt_svc.name + " ## " + rt_llm.name + " ## " + self.what_room_is_point_in_ground_truth(rooms, pos[0]))
-
-            # If SVC and LLM don't agree to the classification of the room, then
-            # tell user and store this difference for reference.
-            if (rt_llm != rt_svc):
-                print("LLM AND SVC CLASSIFICATIONS DIFFER. LLM :: SVC : " + rt_llm.name + " :: " + rt_svc.name)
-                diffs.append({"svc" : rt_svc.name, "llm" : rt_llm.name, "objs" : objs_at_this_pos})
+            print(rt_svc.name + " ## " + rt_llm.name + " ## " + rt_gt.name)
 
             #i+=1
             #if i > 3:
             #    break
 
         #print("AE::::::::::::::::::::::;")
-        #print(sd.getAllVisibleObjectsInAllLivingRooms_smpl())
-
-        #print(sd.getAllVisibleObjectNamesInAllLivingRooms())
 
         # Data processing and saving as Excel
         df = pd.DataFrame(time_records)
         df.to_excel("pkl_" + self.LLM_TYPE + f"/timing_data_{scene_id}.xlsx", index=False)
 
         # store our room points collection into a pickle file
-        scene_descr_fname = "pkl_" + self.LLM_TYPE + "/scene_descr_llm_" + scene_id + ".pkl"
-        pickle.dump(sd_llm, open(scene_descr_fname, "wb"))
-
-        scene_descr_fname = "pkl_" + self.LLM_TYPE + "/scene_descr_svc_" + scene_id + ".pkl"
-        pickle.dump(sd_svc, open(scene_descr_fname, "wb"))
-
-        diff_fname = "pkl_" + self.LLM_TYPE + "/diff_svc_llm_" + scene_id + ".pkl"
-        pickle.dump(diffs, open(diff_fname, "wb"))
+        scene_descr_fname = "pkl_" + self.LLM_TYPE + "/scene_descr_" + scene_id + ".pkl"
+        pickle.dump(sd, open(scene_descr_fname, "wb"))
 
         #print(len(observed_pos))
 
@@ -291,7 +276,7 @@ class DataSceneExtractor:
                         row.append("u")
             print("".join(row))
 
-        return (sd_llm, sd_svc) # return both scene descriptions - classified with LLM and with SVC
+        return sd # return scene description - classified with LLM and with SVC
 
     def ae_test(self):
         floor_plan = "FloorPlan22"
