@@ -3,7 +3,7 @@ import pickle
 
 from gemma_room_classifier import LLMRoomClassifier
 from room_type import RoomType
-from scene_description import SceneDescription
+from scene_description import SceneDescription, ClassifierType
 
 ##
 # This class will analyze harvested scene data and ask LLM:
@@ -37,7 +37,7 @@ class SemanticPathPlanner:
 
         room_to_look_in = self.lrc.where_to_find_this("A bottle of beer")
 
-        object_names_to_look_at = work_scene.getAllVisibleObjectNamesInThisRoom(room_to_look_in)
+        object_names_to_look_at = work_scene.getAllVisibleObjectNamesInThisRoom(ClassifierType.LLM, room_to_look_in)
 
         print(object_names_to_look_at)
 

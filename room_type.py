@@ -38,6 +38,8 @@ class RoomType(Enum):
         ret_val = RoomType.NOT_KNOWN
         if "LIVING ROOM" in text.upper():
             ret_val = RoomType.LIVING_ROOM
+        if "LIVINGROOM" in text.upper():
+            ret_val = RoomType.LIVING_ROOM
         if "KITCHEN" in text.upper():
             ret_val = RoomType.KITCHEN
         if "BEDROOM" in text.upper():
@@ -46,3 +48,7 @@ class RoomType(Enum):
             ret_val = RoomType.BATHROOM
 
         return ret_val
+
+    @classmethod
+    def all_labels(self):
+        return ["LIVING ROOM", "KITCHEN", "BEDROOM", "BATHROOM"]

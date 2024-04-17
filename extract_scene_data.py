@@ -13,8 +13,10 @@ import prior
 from gemma_room_classifier import LLMRoomClassifier # LLM room classifier
 from room_classifier import RoomClassifier # SVC room classifier
 from ModelType import ModelType
+from room_type import RoomType
 from scene_description import SceneDescription
 import pickle
+import glob
 
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
@@ -79,6 +81,34 @@ class DataSceneExtractor:
 
         return visible_objects
 
+    def is_full_house(self, rooms):
+        existing_room_names = set()
+        for room in rooms:
+            rl = room[0].upper()
+            if rl == "LIVINGROOM":
+                rl = "LIVING ROOM"
+            existing_room_names.add(rl)
+
+        return set(RoomType.all_labels()) == existing_room_names
+
+    ##
+    # Returns the highest index of scenes explored
+    ##
+    def last_index_extracted(self):
+        pkl_files_glob = "pkl_" + self.LLM_TYPE + "/scene_descr_llm_train_*.pkl"
+
+        scene_files = glob.glob(pkl_files_glob) # scene files
+
+        highest_index = 0
+        cur_index = 0
+
+        for file_name in scene_files:
+            els = file_name.split("_")
+            cur_index = int(els[-1][:-4])
+            if (cur_index > highest_index):
+                highest_index = cur_index
+
+        return highest_index
 
     def getDataSet(self):
         if (self.dataset is None):
@@ -99,33 +129,38 @@ class DataSceneExtractor:
         #
         # The number in SVC classified scenes must match the number in LLM classified
         # scenes list.
-        scene_descr_llm_fname = "pkl_" + self.LLM_TYPE + "/scene_descriptions_llm.pkl"
-        scene_descr_svc_fname = "pkl_" + self.LLM_TYPE + "/scene_descriptions_svc.pkl"
-        if (os.path.isfile(scene_descr_llm_fname) and os.path.isfile(scene_descr_svc_fname)):
-            file_llm = open(scene_descr_llm_fname,'rb')
-            file_svc = open(scene_descr_svc_fname,'rb')
-            scene_descriptions_llm = pickle.load(file_llm)
-            scene_descriptions_svc = pickle.load(file_svc)
-            file_llm.close()
-            file_svc.close()
-        else:
-            scene_descriptions_llm = []
-            scene_descriptions_svc = []
+        #scene_descr_llm_fname = "pkl_" + self.LLM_TYPE + "/scene_descriptions_llm.pkl"
+        #scene_descr_svc_fname = "pkl_" + self.LLM_TYPE + "/scene_descriptions_svc.pkl"
+        #if (os.path.isfile(scene_descr_llm_fname) and os.path.isfile(scene_descr_svc_fname)):
+        #    file_llm = open(scene_descr_llm_fname,'rb')
+        #    file_svc = open(scene_descr_svc_fname,'rb')
+        #    scene_descriptions_llm = pickle.load(file_llm)
+        #    scene_descriptions_svc = pickle.load(file_svc)
+        #    file_llm.close()
+        #    file_svc.close()
+        #else:
+        #    scene_descriptions_llm = []
+        #    scene_descriptions_svc = []
 
-        stored_number_of_scenes = len(scene_descriptions_llm)
-        print("Scenes already stored: " + str(stored_number_of_scenes))
+        highest_scene_index = self.last_index_extracted()
+        print("Highest index explored: " + str(highest_scene_index))
+        processed_scenes_in_this_batch = 0
 
-        for cnt in range((1 + stored_number_of_scenes), ((self.NUMBER_OF_SCENES_IN_BATCH + 1) + stored_number_of_scenes)):
-            scene_id = "train_" + str(cnt)
+        while processed_scenes_in_this_batch < self.NUMBER_OF_SCENES_IN_BATCH:
+            scene_id = "train_" + str(highest_scene_index + 1)
             print("Processing " + scene_id)
             (sd_llm, sd_svc) = self.ae_process_proctor_scene(scene_id, ds)
-            scene_descriptions_llm.append(sd_llm)
-            scene_descriptions_svc.append(sd_svc)
+            highest_scene_index += 1
+            if not sd_llm:
+                continue
+            #scene_descriptions_llm.append(sd_llm)
+            #scene_descriptions_svc.append(sd_svc)
 
             # store our room points collection into a pickle file. Do it on every
             # scene so that we don't lose anything if stopped prematurely.
-            pickle.dump(scene_descriptions_llm, open(scene_descr_llm_fname, "wb"))
-            pickle.dump(scene_descriptions_svc, open(scene_descr_svc_fname, "wb"))
+            #pickle.dump(scene_descriptions_llm, open(scene_descr_llm_fname, "wb"))
+            #pickle.dump(scene_descriptions_svc, open(scene_descr_svc_fname, "wb"))
+            processed_scenes_in_this_batch += 1
 
     ##
     # Load a PROCTHOR scene specified by the scene_id, build map and classify all
@@ -147,7 +182,15 @@ class DataSceneExtractor:
 
         house = dataset[data_set][scene_num]
         rooms = self.get_rooms_ground_truth(house)
+
         print("ROOOMS:" + str(rooms))
+
+        # If we don't have all 4 rooms types- kitchen, bedroom, living room and bathroom,
+        # then skip.
+        if not self.is_full_house(rooms):
+            print("skipping house because it's not full ----------------------- ")
+            return (False, False)
+
         controller = launch_controller({"scene": house, "VISIBILITY_DISTANCE": 3.0})
 
         #grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
@@ -220,7 +263,7 @@ class DataSceneExtractor:
 
         # Data processing and saving as Excel
         df = pd.DataFrame(time_records)
-        df.to_excel(f"pkl_" + self.LLM_TYPE + "/timing_data_{scene_id}.xlsx", index=False)
+        df.to_excel("pkl_" + self.LLM_TYPE + f"/timing_data_{scene_id}.xlsx", index=False)
 
         # store our room points collection into a pickle file
         scene_descr_fname = "pkl_" + self.LLM_TYPE + "/scene_descr_llm_" + scene_id + ".pkl"
