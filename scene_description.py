@@ -72,6 +72,9 @@ class SceneDescription:
 
       return ret_points
 
+  def get_all_points(self):
+      return self.points_of_scene
+
   def getAllVisibleObjectNamesInThisRoom(self, classifier_type, rt):
       points = self.get_all_points_of_room_type(classifier_type, rt)
       ret_set = set()
