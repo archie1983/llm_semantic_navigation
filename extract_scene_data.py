@@ -95,7 +95,7 @@ class DataSceneExtractor:
     # Returns the highest index of scenes explored
     ##
     def last_index_extracted(self):
-        pkl_files_glob = "pkl_" + self.LLM_TYPE + "/scene_descr_llm_train_*.pkl"
+        pkl_files_glob = "pkl_" + self.LLM_TYPE + "/scene_descr_train_*.pkl"
 
         scene_files = glob.glob(pkl_files_glob) # scene files
 
