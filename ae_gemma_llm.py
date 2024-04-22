@@ -3,6 +3,9 @@ import ollama
 from room_type import RoomType
 
 class GemmaLLMControl:
+    #MODEL_TO_USE = "gemma:7b-instruct-v1.1-q6_K"
+    MODEL_TO_USE = "llama3:8b-instruct-q6_K"
+
     def initialise(self):
         self.prompt_system = """
         You are a robot exploring an environment for the first time .
@@ -190,12 +193,31 @@ class GemmaLLMControl:
         return self.question
 
     ##
+    # Constructs a question of which room to look for the given object
+    ##
+    def construct_object_selector_question_ranking(self, what_to_look_for, where_to_look):
+        template = """
+        I am looking for:
+        {0}
+
+        Which object is it most likely to be near?
+
+        {1}
+
+        Please give rank for each object. You should always provide justification
+        """
+
+        self.question = template.format(what_to_look_for, where_to_look)
+
+        return self.question
+
+    ##
     # Ask LLM which object to look near for the given object. And return its
     # choice.
     ##
     def get_object_selector_answer(self):
         stream = ollama.chat(
-            model = 'gemma:7b-instruct-v1.1-q6_K',
+            model = GemmaLLMControl.MODEL_TO_USE,
             #model='gemma:7b-instruct-q6_K',
             messages=[
                 {"role": "user", "content": self.question}
@@ -228,7 +250,7 @@ class GemmaLLMControl:
 
     def get_answer(self):
         stream = ollama.chat(
-            model = 'gemma:7b-instruct-v1.1-q6_K',
+            model = GemmaLLMControl.MODEL_TO_USE,
             #model='gemma:7b-instruct-q6_K',
             messages=[
                 {"role": "user", "content": self.question}
