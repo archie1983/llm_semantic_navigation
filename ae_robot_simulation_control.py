@@ -24,6 +24,9 @@ import prior
 class RobotNavigationControl:
     is_DEBUG = False
 
+    def set_controller(self, controller):
+        self.controller = controller
+
     def start_procthor(self):
         dataset = prior.load_dataset("procthor-10k")
         #dataset

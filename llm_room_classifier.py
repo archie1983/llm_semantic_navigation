@@ -19,6 +19,15 @@ class LLMRoomClassifier:
     self.stored_labels_loaded = False
 
     self.glc = LLMControl(LLMType.MISTRAL_4b)
+    
+  def __init__(self, llm_type):
+    self.data_counter = 0
+    self.false_cnt = 0
+    self.true_cnt = 0
+
+    self.stored_labels_loaded = False
+
+    self.glc = LLMControl(llm_type)
 
     #########################################################
 
