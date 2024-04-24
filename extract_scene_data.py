@@ -10,7 +10,7 @@ from thortils.grid_map import GridMap
 
 import prior
 
-from gemma_room_classifier import LLMRoomClassifier # LLM room classifier
+from llm_room_classifier import LLMRoomClassifier # LLM room classifier
 from room_classifier import RoomClassifier # SVC room classifier
 from ModelType import ModelType
 from room_type import RoomType

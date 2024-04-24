@@ -1,7 +1,7 @@
 import os
 import pickle
 
-from gemma_room_classifier import LLMRoomClassifier
+from llm_room_classifier import LLMRoomClassifier
 from room_type import RoomType
 from scene_description import SceneDescription, ClassifierType
 
