@@ -235,13 +235,13 @@ class GemmaLLMControl:
           print(cur_chunk, end='', flush=True)
 
         full_answer = full_answer.replace(".", "")
-        if ("Answer:" in full_answer):
-            ndx = full_answer.index("Answer:")
-
-            if (ndx >= 0 and len(full_answer) > ndx + 13):
-                #ret_answer = full_answer[ndx + 12]
-                nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
-                ret_answer = nums[0]
+        #if ("Answer:" in full_answer):
+        #    ndx = full_answer.index("Answer:")
+#
+        #    if (ndx >= 0 and len(full_answer) > ndx + 13):
+        #        #ret_answer = full_answer[ndx + 12]
+        #        nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
+        #        ret_answer = nums[0]
 
         #ret_answer = RoomType.parse_llm_response(full_answer)
 
@@ -268,13 +268,13 @@ class GemmaLLMControl:
           print(cur_chunk, end='', flush=True)
 
         full_answer = full_answer.replace(".", "")
-        if ("Answer:" in full_answer):
-            ndx = full_answer.index("Answer:")
+        #if ("Answer:" in full_answer):
+        #    ndx = full_answer.index("Answer:")
 
-            if (ndx >= 0 and len(full_answer) > ndx + 13):
-                #ret_answer = full_answer[ndx + 12]
-                nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
-                ret_answer = nums[0]
+        #    if (ndx >= 0 and len(full_answer) > ndx + 13):
+        #        #ret_answer = full_answer[ndx + 12]
+        #        nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
+        #        ret_answer = nums[0]
 
         ret_answer = RoomType.parse_llm_response(full_answer)
 
