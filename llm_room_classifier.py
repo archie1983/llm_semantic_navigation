@@ -19,7 +19,7 @@ class LLMRoomClassifier:
     self.stored_labels_loaded = False
 
     self.glc = LLMControl(LLMType.MISTRAL_4b)
-    
+
   def __init__(self, llm_type):
     self.data_counter = 0
     self.false_cnt = 0
@@ -89,12 +89,13 @@ class LLMRoomClassifier:
       objs_to_look_near = ""
       for obj in where_to_look:
           objs_to_look_near += obj + ", "
-
+      
       objs_to_look_near = objs_to_look_near[:-2]
 
       self.glc.construct_object_selector_question(what_to_look_for, objs_to_look_near)
-      ans = self.glc.get_object_selector_answer()
+      ans = self.glc.get_object_selector_answer(where_to_look)
 
+      print("ANS: " + ans)
       return ans
 
   def test_classification_on_stored_data(self):

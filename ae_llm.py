@@ -235,8 +235,15 @@ class LLMControl:
     # Ask LLM which object to look near for the given object. And return its
     # choice.
     ##
-    def get_object_selector_answer(self):
-        print(" LLM :" + self.llm_type.ollama_tag())
+    def get_object_selector_answer(self, object_list):
+
+        #print("obj list pre: " + str(object_list))
+
+        object_list = [" " + obj + " " for obj in object_list]
+
+        #print("obj list post: " + str(object_list))
+
+        #print(" LLM :" + self.llm_type.ollama_tag())
         stream = ollama.chat(
             model = self.llm_type.ollama_tag(),
             #model='gemma:7b-instruct-q6_K',
@@ -248,26 +255,61 @@ class LLMControl:
 
         full_answer = ""
         cur_chunk = ""
-        ret_answer = -1
+        #ret_answer = -1
 
         for chunk in stream:
           cur_chunk = chunk['message']['content']
           full_answer += cur_chunk
           print(cur_chunk, end='', flush=True)
 
-        full_answer = full_answer.replace(".", "")
-        if ("Answer:" in full_answer):
-            ndx = full_answer.index("Answer:")
+        #full_answer = full_answer.replace(".", "")
+        #if ("Answer:" in full_answer):
+        #    ndx = full_answer.index("Answer:")
+        #
+        #    if (ndx >= 0 and len(full_answer) > ndx + 13):
+        #        #ret_answer = full_answer[ndx + 12]
+        #        nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
+        #        ret_answer = nums[0]
 
-            if (ndx >= 0 and len(full_answer) > ndx + 13):
-                #ret_answer = full_answer[ndx + 12]
-                nums = [int(s) for s in full_answer[ndx:(ndx + 18)].split() if s.isdigit()]
-                ret_answer = nums[0]
+        ##
+        # Find the first occurence of any of the items in the list. This may not be perfect, but probably will do for now
+        ##
+        full_answer = full_answer.replace(".", " ")
+        full_answer = full_answer.replace("*", " ")
+        full_answer = full_answer.replace("#", " ")
+        full_answer = full_answer.replace(",", " ")
+        full_answer = full_answer.replace("!", " ")
+        full_answer = full_answer.replace("?", " ")
+        full_answer = full_answer.replace("\"", " ")
+        full_answer = full_answer.replace("£", " ")
+        full_answer = full_answer.replace("$", " ")
+        full_answer = full_answer.replace("%", " ")
+        full_answer = full_answer.replace("^", " ")
+        full_answer = full_answer.replace("&", " ")
+        full_answer = full_answer.replace("(", " ")
+        full_answer = full_answer.replace(")", " ")
+        full_answer = full_answer.replace("@", " ")
+        full_answer = full_answer.replace("~", " ")
+        full_answer = full_answer.replace("\'", " ")
+        full_answer = full_answer.replace("\n", " ")
 
-        #ret_answer = RoomType.parse_llm_response(full_answer)
+        #print(full_answer)
+        nearest_index = 1000000
+        for obj in object_list:
+            if obj.upper() in full_answer.upper() and nearest_index > full_answer.upper().find(obj.upper()):
+                ret_answer = obj.strip()
+                nearest_index = full_answer.upper().find(obj.upper())
 
-        #print("NDX: " + str(ndx) + " : " + str(len(full_answer)) + " : " + full_answer[ndx + 12] + " ## " + ret_answer)
-        #return ret_answer
+        print("NDX: " + str(nearest_index) + " : " + full_answer + " : " + str(object_list) + " ## " + ret_answer)
+        return ret_answer
+
+    def extract_obj_from_text(object_list, text):
+        nearest_index = 1000000
+        for obj in object_list:
+            if obj.upper() in text.upper() and nearest_index > text.upper().find(obj.upper()):
+                ret_answer = obj
+                nearest_index = text.upper().find(obj.upper())
+        return ret_answer
 
     def get_answer_structured_qry(self):
         stream = ollama.chat(

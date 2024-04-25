@@ -82,3 +82,11 @@ class SceneDescription:
           ret_set = ret_set.union(p["visible_object_names"])
 
       return ret_set
+
+  def getAllVisibleObjectsInThisRoom(self, classifier_type, rt):
+      points = self.get_all_points_of_room_type(classifier_type, rt)
+      ret_set = set()
+      for p in points:
+          ret_set = ret_set.union(p["visible_objects_at_this_point"])
+
+      return ret_set
