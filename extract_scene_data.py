@@ -14,6 +14,7 @@ from llm_room_classifier import LLMRoomClassifier # LLM room classifier
 from room_classifier import RoomClassifier # SVC room classifier
 from ModelType import ModelType
 from room_type import RoomType
+from ae_llm import LLMType
 from scene_description import SceneDescription
 import pickle
 import glob
@@ -22,18 +23,24 @@ from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 class DataSceneExtractor:
-    def __init__(self):
+    def __init__(self, llm_type):
         self.dataset = None
         # If our point only has these common objects visible, then there's little point
         # to classify, because these are common.
         self.common_objs = {'Wall', 'Doorway', 'Window', 'Floor', 'Doorframe'}
 
-        self.lrc = LLMRoomClassifier()
+        self.lrc = LLMRoomClassifier(llm_type)
         #self.src = RoomClassifier(False, ModelType.AI2_THOR)
         self.src = RoomClassifier(False, ModelType.HYBRID_AI2_THOR)
         self.NUMBER_OF_SCENES_IN_BATCH = 7
 
-        self.LLM_TYPE = "gemma"
+        self.LLM_TYPE = llm_type.name
+
+        self.data_store_dir = "experiment_data"
+
+        # Create the directory where to store experiment data if it doesn't exist
+        if not os.path.exists(self.data_store_dir + "/pkl_" + self.LLM_TYPE):
+            os.makedirs(self.data_store_dir + "/pkl_" + self.LLM_TYPE)
 
     ##
     # Ground truth functions - data extracted from the actual room and point is
@@ -95,7 +102,7 @@ class DataSceneExtractor:
     # Returns the highest index of scenes explored
     ##
     def last_index_extracted(self):
-        pkl_files_glob = "pkl_" + self.LLM_TYPE + "/scene_descr_train_*.pkl"
+        pkl_files_glob = self.data_store_dir + "/pkl_" + self.LLM_TYPE + "/scene_descr_train_*.pkl"
 
         scene_files = glob.glob(pkl_files_glob) # scene files
 
@@ -186,6 +193,7 @@ class DataSceneExtractor:
 
         # If we don't have all 4 rooms types- kitchen, bedroom, living room and bathroom,
         # then skip.
+        #if self.is_full_house(rooms): # for debug only - when we want quick classification of a small room.
         if not self.is_full_house(rooms):
             print("skipping house because it's not full ----------------------- ")
             return False
@@ -246,6 +254,7 @@ class DataSceneExtractor:
             print(objs_at_this_pos)
             print(rt_svc.name + " ## " + rt_llm.name + " ## " + rt_gt.name)
 
+            # For debug only - this would limit the explored points per room to only 3
             #i+=1
             #if i > 3:
             #    break
@@ -254,10 +263,10 @@ class DataSceneExtractor:
 
         # Data processing and saving as Excel
         df = pd.DataFrame(time_records)
-        df.to_excel("pkl_" + self.LLM_TYPE + f"/timing_data_{scene_id}.xlsx", index=False)
+        df.to_excel(self.data_store_dir + "/pkl_" + self.LLM_TYPE + f"/timing_data_{scene_id}.xlsx", index=False)
 
         # store our room points collection into a pickle file
-        scene_descr_fname = "pkl_" + self.LLM_TYPE + "/scene_descr_" + scene_id + ".pkl"
+        scene_descr_fname = self.data_store_dir + "/pkl_" + self.LLM_TYPE + "/scene_descr_" + scene_id + ".pkl"
         pickle.dump(sd, open(scene_descr_fname, "wb"))
 
         #print(len(observed_pos))
@@ -341,7 +350,7 @@ class DataSceneExtractor:
         os.remove("temp-grid-map.json")
 
 if __name__ == "__main__":
-    dse = DataSceneExtractor()
+    dse = DataSceneExtractor(LLMType.LLAMA)
     #dse.getDataSet()
     #dse.test_data_scene_processing("val_15")
     dse.process_1_batch_of_data_scenes()
