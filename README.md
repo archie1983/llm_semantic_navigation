@@ -23,9 +23,9 @@ pip install --no-cache-dir -e .
 
 To demonstrate our approach, there are two main scripts:
 
-extract_scene_data.py - for classifying a habitat from ProcTHOR-10k dataset. It will select next habitat with all 4 room types (Kitchen, Living room, Bedroom, Bathroom) from the training part of the dataset and then it will put the agent in random positions in that habitat and classify each random point belonging to a specific room- depending on objects observed around it.
+**extract_scene_data.py** - for classifying a habitat from ProcTHOR-10k dataset. It will select next habitat with all 4 room types (**Kitchen**, **Living room**, **Bedroom**, **Bathroom**) from the training part of the dataset and then it will put the agent in random positions in that habitat and classify each random point belonging to a specific room- depending on objects observed around it.
 
-semantic_path_planner.py - Uses the points classified by extract_scene_data.py to generate a path to an object of interest. It also plots the generated path on top of a top-view habitat image. I used this in the jupyter notebook "environment.ipynb" because running it from command line gave error: about xcb QT plugin that couldn't be started. I didn't have time to fix that, so ran it from jupyter notebook.
+**semantic_path_planner.py** - Uses the points classified by extract_scene_data.py to generate a path to an object of interest. It also plots the generated path on top of a top-view habitat image. I used this in the jupyter notebook "environment.ipynb" because running it from command line gave error: about xcb QT plugin that couldn't be started. I didn't have time to fix that, so ran it from jupyter notebook.
 
-Finally analyse_classification_results.ipynb is where I analyzed test results and generated box plots.
-generate_and_evaluate_datasets.ipynb is where I generated the SVC.
+Finally **analyse_classification_results.ipynb** is where I analyzed test results and generated box plots.
+**generate_and_evaluate_datasets.ipynb** is where I generated the SVC.
