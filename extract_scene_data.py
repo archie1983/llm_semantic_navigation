@@ -37,7 +37,7 @@ class DataSceneExtractor:
 
         self.data_store_dir = "experiment_data"
 
-        self.DEBUG = True # A flag of whether we want to debug and go through a room very quickly - only small rooms and only 3 points in each to classify.
+        self.DEBUG = False # A flag of whether we want to debug and go through a room very quickly - only small rooms and only 3 points in each to classify.
 
         # Create the directory where to store experiment data if it doesn't exist
         if not os.path.exists(self.data_store_dir + "/pkl_" + self.LLM_TYPE):
