@@ -2,7 +2,14 @@ The project relies on AI2-THOR, ProcTHOR-10k dataset and several LLMs: Llama3, M
 
 You must also install Thortils version from the referenced repository in the git submodule here. The vanilla Thortils will not work as I made several important changes. The best way to do that is to set up a conda environment for this purpose and install Thortils using:
 
+'''
+git clone https://github.com/archie1983/llm_semantic_navigation
+cd llm_semantic_navigation
+git submodule init
+git submodule update
+cd thortils
 pip install --no-cache-dir -e .
+'''
 
 To demonstrate our approach, there are two main scripts:
 
