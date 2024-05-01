@@ -29,14 +29,15 @@ class DataSceneExtractor:
         # to classify, because these are common.
         self.common_objs = {'Wall', 'Doorway', 'Window', 'Floor', 'Doorframe'}
 
-        self.lrc = LLMRoomClassifier(llm_type)
-        #self.src = RoomClassifier(False, ModelType.AI2_THOR)
-        self.src = RoomClassifier(False, ModelType.HYBRID_AI2_THOR)
+        self.lrc = LLMRoomClassifier(llm_type) # LLM classifier
+        self.src = RoomClassifier(False, ModelType.HYBRID_AI2_THOR) # SVC classifier
         self.NUMBER_OF_SCENES_IN_BATCH = 7
 
         self.LLM_TYPE = llm_type.name
 
         self.data_store_dir = "experiment_data"
+
+        self.DEBUG = True # A flag of whether we want to debug and go through a room very quickly - only small rooms and only 3 points in each to classify.
 
         # Create the directory where to store experiment data if it doesn't exist
         if not os.path.exists(self.data_store_dir + "/pkl_" + self.LLM_TYPE):
@@ -123,32 +124,13 @@ class DataSceneExtractor:
             #print(self.dataset)
         return self.dataset
 
-    def test_data_scene_processing(self, scene_id):
-        self.ae_process_proctor_scene(scene_id, self.getDataSet())
-
     def process_1_batch_of_data_scenes(self):
         ds = self.getDataSet()
         # scene descriptions. Each of which will contain points of its floorplan
         # that were traversed using the proper_convert_scene_to_grid_map_and_poses
         # method
-        # If pickle file for our scene descriptions exists, then load scene
-        # descriptions from there, otherwise create an empty collection
-        #
-        # The number in SVC classified scenes must match the number in LLM classified
-        # scenes list.
-        #scene_descr_llm_fname = "pkl_" + self.LLM_TYPE + "/scene_descriptions_llm.pkl"
-        #scene_descr_svc_fname = "pkl_" + self.LLM_TYPE + "/scene_descriptions_svc.pkl"
-        #if (os.path.isfile(scene_descr_llm_fname) and os.path.isfile(scene_descr_svc_fname)):
-        #    file_llm = open(scene_descr_llm_fname,'rb')
-        #    file_svc = open(scene_descr_svc_fname,'rb')
-        #    scene_descriptions_llm = pickle.load(file_llm)
-        #    scene_descriptions_svc = pickle.load(file_svc)
-        #    file_llm.close()
-        #    file_svc.close()
-        #else:
-        #    scene_descriptions_llm = []
-        #    scene_descriptions_svc = []
-
+        # If pickle file for our scene description exists, then move on to the next
+        # scene, otherwise explore this one
         highest_scene_index = self.last_index_extracted()
         print("Highest index explored: " + str(highest_scene_index))
         processed_scenes_in_this_batch = 0
@@ -160,13 +142,7 @@ class DataSceneExtractor:
             highest_scene_index += 1
             if not sd:
                 continue
-            #scene_descriptions_llm.append(sd_llm)
-            #scene_descriptions_svc.append(sd_svc)
 
-            # store our room points collection into a pickle file. Do it on every
-            # scene so that we don't lose anything if stopped prematurely.
-            #pickle.dump(scene_descriptions_llm, open(scene_descr_llm_fname, "wb"))
-            #pickle.dump(scene_descriptions_svc, open(scene_descr_svc_fname, "wb"))
             processed_scenes_in_this_batch += 1
 
     ##
@@ -193,8 +169,8 @@ class DataSceneExtractor:
 
         # If we don't have all 4 rooms types- kitchen, bedroom, living room and bathroom,
         # then skip.
-        #if self.is_full_house(rooms): # for debug only - when we want quick classification of a small room.
-        if not self.is_full_house(rooms):
+        # for debug only - when we want quick classification of a small room, the flag self.DEBUG must be true.
+        if (not self.DEBUG and self.is_full_house(rooms)) or (self.DEBUG and not self.is_full_house(rooms)):
             print("skipping house because it's not full ----------------------- ")
             return False
 
@@ -255,9 +231,10 @@ class DataSceneExtractor:
             print(rt_svc.name + " ## " + rt_llm.name + " ## " + rt_gt.name)
 
             # For debug only - this would limit the explored points per room to only 3
-            #i+=1
-            #if i > 3:
-            #    break
+            if self.DEBUG:
+                i+=1
+                if i > 3:
+                    break
 
         #print("AE::::::::::::::::::::::;")
 
@@ -287,72 +264,6 @@ class DataSceneExtractor:
 
         return sd # return scene description - classified with LLM and with SVC
 
-    def ae_test(self):
-        floor_plan = "FloorPlan22"
-        scene_info = SceneDataset.load_single("./scenes", floor_plan)
-        controller = launch_controller({"scene":floor_plan})
-        grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
-
-        print(floor_plan)
-        for y in range(grid_map.length):
-            row = []
-            for x in range(grid_map.width):
-                if (x,y) in grid_map.free_locations:
-                    row.append(".")
-                else:
-                    assert (x,y) in grid_map.obstacles
-                    row.append("x")
-            print("".join(row))
-
-    def test_scene_to_grid_map(self):
-        floor_plan = "FloorPlan22"
-        scene_info = SceneDataset.load_single("./scenes", floor_plan)
-        controller = launch_controller({"scene":floor_plan})
-        grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
-
-        print(floor_plan)
-        for y in range(grid_map.length):
-            row = []
-            for x in range(grid_map.width):
-                if (x,y) in grid_map.free_locations:
-                    row.append(".")
-                else:
-                    assert (x,y) in grid_map.obstacles
-                    row.append("x")
-            print("".join(row))
-
-        # Highlight reachable positions
-        reachable_positions = thor_reachable_positions(controller)
-        highlights = []
-        for thor_pos in reachable_positions:
-            highlights.append(grid_map.to_grid_pos(*thor_pos))
-        viz = GridMapVisualizer(grid_map=grid_map, res=30)
-        img = viz.render()
-        img = viz.highlight(img, highlights,
-                            color=(25, 214, 224), show_progress=True)
-        viz.show_img(img)
-        time.sleep(10)
-
-    def test_grid_map_save_load(self):
-        floor_plan = "FloorPlan1"
-        scene_info = SceneDataset.load_single("./scenes", floor_plan)
-        controller = launch_controller({"scene":floor_plan})
-        grid_map = convert_scene_to_grid_map(controller, floor_plan, 0.25)
-        grid_map.save("temp-grid-map.json")
-
-        grid_map2 = GridMap.load("temp-grid-map.json")
-
-        assert grid_map.free_locations == grid_map2.free_locations
-        assert grid_map.width == grid_map2.width
-        assert grid_map.length == grid_map2.length
-        assert grid_map.grid_size == grid_map2.grid_size
-
-        os.remove("temp-grid-map.json")
-
 if __name__ == "__main__":
     dse = DataSceneExtractor(LLMType.LLAMA)
-    #dse.getDataSet()
-    #dse.test_data_scene_processing("val_15")
     dse.process_1_batch_of_data_scenes()
-    #dse.test_scene_to_grid_map()
-    #dse.test_grid_map_save_load()
