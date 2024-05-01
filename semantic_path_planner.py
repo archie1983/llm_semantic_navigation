@@ -9,7 +9,7 @@ from scene_description import SceneDescription, ClassifierType
 from thortils import (launch_controller,
                       convert_scene_to_grid_map, proper_convert_scene_to_grid_map, proper_convert_scene_to_grid_map_and_poses)
 
-from thortils.navigation import get_shortest_path_to_object_type
+from thortils.navigation import get_shortest_path_to_object_type, get_shortest_path_to_object
 from thortils.agent import thor_reachable_positions, thor_agent_position, thor_agent_pose
 from thortils.utils import roundany
 from thortils.controller import _resolve
@@ -29,8 +29,11 @@ import copy
 # object.
 ##
 class SemanticPathPlanner:
-    def __init__(self, scene_id):
-        scene_descr_fname = "experiment_data/pkl_llama/scene_descr_" + scene_id + ".pkl"
+    def __init__(self, scene_id, llm_type):
+        self.data_store_dir = "experiment_data"
+        self.LLM_TYPE = llm_type.name
+
+        scene_descr_fname = self.data_store_dir + "/pkl_" + self.LLM_TYPE + "/scene_descr_" + scene_id + ".pkl"
         if os.path.isfile(scene_descr_fname):
             file = open(scene_descr_fname,'rb')
             self.scene_description = pickle.load(file)
@@ -42,7 +45,7 @@ class SemanticPathPlanner:
             raise Exception("No scenes data file found. Nothing to do.")
 
         self.scene_id = scene_id
-        self.lrc = LLMRoomClassifier(LLMType.LLAMA)
+        self.lrc = LLMRoomClassifier(llm_type)
         self.dataset = None
         self.controller = None
         self.rnc = RobotNavigationControl()
@@ -84,7 +87,7 @@ class SemanticPathPlanner:
         #print(obj)
         self.last_goal_position = obj["position"]
 
-        return get_shortest_path_to_object_type(self.controller, object_type, start_position, start_rotation)
+        return get_shortest_path_to_object(self.controller, obj["objectId"], start_position, start_rotation)
 
     def get_path_to(self, object_type):
         #return get_shortest_path_to_object_type(controller, object_id, start_position, start_rotation, **{"return_plan": return_plan})
@@ -107,6 +110,23 @@ class SemanticPathPlanner:
 
         room_to_look_in = self.lrc.where_to_find_this("A bottle of beer")
         object_names_to_look_at = work_scene.getAllVisibleObjectNamesInThisRoom(ClassifierType.LLM, room_to_look_in)
+        print(object_names_to_look_at)
+        object_to_look_at = self.lrc.where_to_look_first("A fresh, cold, unopened bottle of beer", object_names_to_look_at)
+
+        path = self.get_path_to(object_to_look_at)
+        #path = self.get_path_to("Fridge")
+        #print(str(path))
+
+        return path
+
+    ##
+    # Asking LLM to tell us where to look for a bottle of beer
+    ##
+    def bring_me_a_bottle_of_beer_from_actual_objs(self):
+        work_scene = self.scene_description
+
+        room_to_look_in = self.lrc.where_to_find_this("A bottle of beer")
+        object_names_to_look_at = work_scene.getAllVisibleObjectNamesInThisRoom(ClassifierType.LLM, room_to_look_in)
         actual_objects_to_look_at = work_scene.getAllVisibleObjectsInThisRoom(ClassifierType.LLM, room_to_look_in)
         print(object_names_to_look_at)
         object_to_look_at = self.lrc.where_to_look_first("A fresh, cold, unopened bottle of beer", object_names_to_look_at)
@@ -124,7 +144,7 @@ class SemanticPathPlanner:
         return path
 
     ##
-    # Asking LLM to tell us where to look for a bottle of beer
+    # Asking LLM to tell us where to look for a hair pin
     ##
     def bring_me_hair_pin(self):
         work_scene = self.scene_description
@@ -140,6 +160,9 @@ class SemanticPathPlanner:
 
         return path
 
+    ##
+    # Asking LLM to tell us where to look for an arbitrary object
+    ##
     def bring_me_this(self, what_to_bring):
         work_scene = self.scene_description
 
@@ -154,6 +177,30 @@ class SemanticPathPlanner:
 
         return path
 
+    def bring_me_this_from_actual_objs(self, what_to_bring):
+        work_scene = self.scene_description
+
+        room_to_look_in = self.lrc.where_to_find_this(what_to_bring)
+        object_names_to_look_at = work_scene.getAllVisibleObjectNamesInThisRoom(ClassifierType.LLM, room_to_look_in)
+        actual_objects_to_look_at = work_scene.getAllVisibleObjectsInThisRoom(ClassifierType.LLM, room_to_look_in)
+        #print(object_names_to_look_at)
+        object_to_look_at = self.lrc.where_to_look_first(what_to_bring, object_names_to_look_at)
+
+        for obj in actual_objects_to_look_at:
+            if obj["objectType"] == object_to_look_at:
+                needed_obj = obj
+                break
+
+        #path = self.get_path_to(object_to_look_at)
+        path = self.get_path_to_actual_object(needed_obj)
+        #path = self.get_path_to("Fridge")
+        #print(str(path))
+
+        return path
+
+    ##
+    # For display purposes - the top down view of the habitat
+    ##
     def get_top_down_frame(self):
         # Setup the top-down camera
         event = self.controller.step(action="GetMapViewCameraProperties", raise_for_failure=True)
@@ -178,6 +225,9 @@ class SemanticPathPlanner:
         top_down_frame = event.third_party_camera_frames[-1]
         return Image.fromarray(top_down_frame)
 
+    ##
+    # Plot a path on the top-down view of the habitat
+    ##
     def visualise_path(self, path):
         grid_size = self.controller.initialization_parameters["gridSize"]
 
@@ -234,5 +284,7 @@ class SemanticPathPlanner:
         return self.controller
 
 if __name__ == "__main__":
-    spp = SemanticPathPlanner("train_55")
-    spp.bring_me_a_bottle_of_beer()
+    spp = SemanticPathPlanner("train_55", LLMType.LLAMA)
+    #path = spp.bring_me_a_bottle_of_beer()
+    path = spp.bring_me_a_bottle_of_beer_from_actual_objs()
+    spp.visualise_path(path)
