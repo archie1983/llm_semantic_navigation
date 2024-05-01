@@ -1,4 +1,14 @@
-The project relies on AI2-THOR, ProcTHOR-10k dataset and several LLMs: Llama3, Mistral and Gemma. Please pull them before running this code. The required versions are specified in ae_llm.py where more can be added, but currently the following versions are used: gemma:7b-instruct-v1.1-q6_K, mistral:7b-instruct-v0.2-q4_0, mistral:7b-instruct-v0.2-q6_K, llama3:8b-instruct-q6_K.
+The project relies on [AI2-THOR](https://github.com/allenai/ai2thor), [ProcTHOR-10k](https://github.com/allenai/procthor-10k) dataset and several LLMs:
+* Llama3
+* Mistral
+* Gemma.
+
+Please pull them before running this code. The required versions are specified in ae_llm.py where more can be added, but currently the following versions are used:
+
+* [gemma:7b-instruct-v1.1-q6_K](https://ollama.com/library/gemma:7b-instruct-v1.1-q6_K)
+* [mistral:7b-instruct-v0.2-q4_0](https://ollama.com/library/mistral:7b-instruct-v0.2-q4_0)
+* [mistral:7b-instruct-v0.2-q6_K](https://ollama.com/library/mistral:7b-instruct-v0.2-q6_K)
+* [llama3:8b-instruct-q6_K](https://ollama.com/library/llama3:8b-instruct-q6_K)
 
 You must also install Thortils version from the referenced repository in the git submodule here. The vanilla Thortils will not work as I made several important changes. The best way to do that is to set up a conda environment for this purpose and install Thortils using:
 
