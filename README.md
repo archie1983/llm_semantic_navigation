@@ -29,3 +29,15 @@ To demonstrate our approach, there are two main scripts:
 
 Finally **analyse_classification_results.ipynb** is where I analyzed test results and generated box plots.
 **generate_and_evaluate_datasets.ipynb** is where I generated the SVC.
+
+### If you find this useful, please use the following reference in your publishing
+```
+@inproceedings{elksnis2024utility,
+  title={Utility of Local Quantized Large Language Models in Semantic Navigation},
+  author={Elksnis, Arturs and Xue, Ziheng and Chen, Feng and Wang, Ning},
+  booktitle={2024 29th International Conference on Automation and Computing (ICAC)},
+  pages={1--6},
+  year={2024},
+  organization={IEEE}
+}
+```
